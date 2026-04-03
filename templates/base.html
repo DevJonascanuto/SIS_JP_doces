@@ -11,6 +11,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='img/logo.jpg') }}"/>
   <!-- Custom CSS -->
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
 
@@ -22,7 +24,7 @@
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="logo-wrap">
-      <span class="logo-icon">🍬</span>
+      <img src="{{ url_for('static', filename='img/logo.jpg') }}" alt="JP Doces" style="width:42px;height:42px;border-radius:8px;object-fit:cover;">
       <div class="logo-text">
         <span class="logo-jp">JP</span>
         <span class="logo-doces">DOCES</span>
