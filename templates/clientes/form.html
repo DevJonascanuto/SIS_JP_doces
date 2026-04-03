@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if cliente else 'Novo' }} Cliente{% endblock %}
+{% block page_title %}{{ 'Editar' if cliente else 'Novo' }} Cliente{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 animate-fade">
+  <a href="{{ url_for('clientes_lista') }}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Voltar para Clientes
+  </a>
+</div>
+
+<div class="card-panel animate-fade" style="--delay:.05s; max-width: 700px;">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="bi bi-{{ 'pencil' if cliente else 'person-plus' }}"></i>
+      {{ 'Editar Cliente' if cliente else 'Cadastrar Novo Cliente' }}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('cliente_editar', id=cliente.id) if cliente else url_for('cliente_novo') }}">
+
+    <div class="row g-3">
+
+      <div class="col-12">
+        <label class="form-label-jp">Nome Completo / Razão Social <span class="req">*</span></label>
+        <input type="text" name="nome" class="form-control jp-input"
+               value="{{ cliente.nome if cliente else '' }}"
+               placeholder="Ex: Mercado do João" required maxlength="120">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">CPF / CNPJ</label>
+        <input type="text" name="cpf_cnpj" class="form-control jp-input"
+               value="{{ cliente.cpf_cnpj if cliente else '' }}"
+               placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="20">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">Telefone / WhatsApp</label>
+        <input type="text" name="telefone" class="form-control jp-input"
+               value="{{ cliente.telefone if cliente else '' }}"
+               placeholder="(00) 00000-0000" maxlength="20">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">E-mail</label>
+        <input type="email" name="email" class="form-control jp-input"
+               value="{{ cliente.email if cliente else '' }}"
+               placeholder="email@exemplo.com" maxlength="100">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">Endereço</label>
+        <input type="text" name="endereco" class="form-control jp-input"
+               value="{{ cliente.endereco if cliente else '' }}"
+               placeholder="Rua, número, bairro" maxlength="200">
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label-jp">Cidade</label>
+        <input type="text" name="cidade" class="form-control jp-input"
+               value="{{ cliente.cidade if cliente else '' }}"
+               placeholder="Cidade" maxlength="80">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label-jp">UF</label>
+        <select name="estado" class="form-select jp-select">
+          <option value="">--</option>
+          {% for uf in ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] %}
+          <option value="{{ uf }}" {% if cliente and cliente.estado == uf %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label-jp">Observações</label>
+        <textarea name="observacoes" class="form-control jp-input" rows="3"
+                  placeholder="Informações adicionais...">{{ cliente.observacoes if cliente else '' }}</textarea>
+      </div>
+
+    </div>
+
+    <div class="form-footer mt-4">
+      <button type="submit" class="btn-primary-jp">
+        <i class="bi bi-check-lg"></i>
+        {{ 'Salvar Alterações' if cliente else 'Cadastrar Cliente' }}
+      </button>
+      <a href="{{ url_for('clientes_lista') }}" class="btn-outline-jp">Cancelar</a>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,63 @@
+╔══════════════════════════════════════════════════════╗
+║         🍬  JP DOCES — SISTEMA DE PEDIDOS           ║
+╚══════════════════════════════════════════════════════╝
+
+PRÉ-REQUISITOS:
+  ✔ Python 3.9 ou superior
+  ✔ MySQL Server instalado e rodando
+
+══════════════════════════════════════════════════════
+  PASSO 1 — CONFIGURAR BANCO DE DADOS
+══════════════════════════════════════════════════════
+Edite o arquivo .env com suas credenciais do MySQL:
+
+  DB_USER=root
+  DB_PASSWORD=sua_senha_aqui   ← coloque sua senha
+  DB_HOST=localhost
+  DB_PORT=3306
+  DB_NAME=jp_doces
+
+══════════════════════════════════════════════════════
+  PASSO 2 — INSTALAR DEPENDÊNCIAS
+══════════════════════════════════════════════════════
+Abra o terminal nesta pasta e execute:
+
+  pip install -r requirements.txt
+
+══════════════════════════════════════════════════════
+  PASSO 3 — CONFIGURAR BANCO E IMPORTAR PRODUTOS
+══════════════════════════════════════════════════════
+  python setup.py
+
+  Isso irá:
+  • Criar o banco de dados jp_doces
+  • Criar todas as tabelas
+  • Importar os ~130 produtos do catálogo JP Doces
+
+══════════════════════════════════════════════════════
+  PASSO 4 — INICIAR O SISTEMA
+══════════════════════════════════════════════════════
+  python app.py
+
+  Acesse no navegador:  http://localhost:5000
+
+══════════════════════════════════════════════════════
+  FUNCIONALIDADES
+══════════════════════════════════════════════════════
+  📊 Dashboard       — Visão geral com estatísticas
+  📦 Produtos        — Cadastro e busca por nome/código
+  👥 Clientes        — Cadastro completo de clientes
+  🛒 Novo Pedido     — Busca rápida de produtos, carrinho
+                        com quantidades, desconto, total
+  📋 Pedidos         — Histórico e gestão de status
+  📄 PDF             — Geração de pedido em PDF profissional
+
+══════════════════════════════════════════════════════
+  ESTRUTURA DO BANCO
+══════════════════════════════════════════════════════
+  Tabela: produtos      (código, nome, categoria, preço)
+  Tabela: clientes      (dados do cliente)
+  Tabela: pedidos       (cabeçalho do pedido)
+  Tabela: itens_pedido  (produtos do pedido)
+
+══════════════════════════════════════════════════════

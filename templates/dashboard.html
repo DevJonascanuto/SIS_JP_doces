@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Cards de estatísticas -->
+<div class="row g-4 mb-4">
+
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-pink animate-fade" style="--delay:.05s">
+      <div class="stat-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div class="stat-info">
+        <div class="stat-value counter" data-target="{{ total_produtos }}">0</div>
+        <div class="stat-label">Produtos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-purple animate-fade" style="--delay:.1s">
+      <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-info">
+        <div class="stat-value counter" data-target="{{ total_clientes }}">0</div>
+        <div class="stat-label">Clientes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-orange animate-fade" style="--delay:.15s">
+      <div class="stat-icon"><i class="bi bi-cart-fill"></i></div>
+      <div class="stat-info">
+        <div class="stat-value counter" data-target="{{ total_pedidos }}">0</div>
+        <div class="stat-label">Pedidos Total</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-green animate-fade" style="--delay:.2s">
+      <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">R$ {{ '%.2f'|format(receita_total) }}</div>
+        <div class="stat-label">Receita Total</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick actions -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <h6 class="section-label">Ações Rápidas</h6>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('pedido_novo') }}" class="quick-action qa-pink animate-fade" style="--delay:.25s">
+      <i class="bi bi-plus-circle-fill"></i>
+      <span>Novo Pedido</span>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('produto_novo') }}" class="quick-action qa-purple animate-fade" style="--delay:.3s">
+      <i class="bi bi-box-arrow-in-down"></i>
+      <span>Novo Produto</span>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('cliente_novo') }}" class="quick-action qa-orange animate-fade" style="--delay:.35s">
+      <i class="bi bi-person-plus-fill"></i>
+      <span>Novo Cliente</span>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('pedidos_lista') }}" class="quick-action qa-green animate-fade" style="--delay:.4s">
+      <i class="bi bi-list-check"></i>
+      <span>Ver Pedidos</span>
+    </a>
+  </div>
+</div>
+
+<!-- Últimos pedidos -->
+<div class="card-panel animate-fade" style="--delay:.45s">
+  <div class="panel-header">
+    <div class="panel-title"><i class="bi bi-clock-history"></i> Últimos Pedidos</div>
+    <a href="{{ url_for('pedidos_lista') }}" class="btn-link-sm">Ver todos <i class="bi bi-arrow-right"></i></a>
+  </div>
+
+  {% if ultimos_pedidos %}
+  <div class="table-responsive">
+    <table class="table table-hover jp-table">
+      <thead>
+        <tr>
+          <th>Nº Pedido</th>
+          <th>Cliente</th>
+          <th>Data</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in ultimos_pedidos %}
+        <tr>
+          <td><span class="code-badge">{{ p.numero }}</span></td>
+          <td><strong>{{ p.cliente.nome }}</strong></td>
+          <td>{{ p.data.strftime('%d/%m/%Y') if p.data else '-' }}</td>
+          <td><span class="price-tag">R$ {{ '%.2f'|format(p.total) }}</span></td>
+          <td><span class="status-badge status-{{ p.status }}">{{ p.status|capitalize }}</span></td>
+          <td>
+            <a href="{{ url_for('pedido_detalhe', id=p.id) }}" class="btn-icon" title="Ver pedido">
+              <i class="bi bi-eye"></i>
+            </a>
+            <a href="{{ url_for('pedido_pdf', id=p.id) }}" class="btn-icon btn-icon-pink" title="Gerar PDF" target="_blank">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-cart-x"></i>
+    <p>Nenhum pedido ainda.</p>
+    <a href="{{ url_for('pedido_novo') }}" class="btn-primary-jp">Criar primeiro pedido</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

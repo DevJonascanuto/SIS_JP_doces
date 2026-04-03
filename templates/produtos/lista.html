@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Produtos{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+
+{% block content %}
+
+<div class="page-actions mb-4 animate-fade">
+  <a href="{{ url_for('produto_novo') }}" class="btn-primary-jp">
+    <i class="bi bi-plus-lg"></i> Novo Produto
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-panel mb-4 animate-fade" style="--delay:.05s">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label-jp">Buscar por nome ou código</label>
+      <div class="input-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="form-control jp-input" value="{{ q }}" placeholder="Digite nome ou código...">
+      </div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label-jp">Categoria</label>
+      <select name="categoria" class="form-select jp-select">
+        <option value="">Todas as categorias</option>
+        {% for cat in categorias %}
+        <option value="{{ cat }}" {% if cat == categoria %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn-primary-jp w-100"><i class="bi bi-search"></i> Filtrar</button>
+      <a href="{{ url_for('produtos_lista') }}" class="btn-outline-jp"><i class="bi bi-x"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Tabela -->
+<div class="card-panel animate-fade" style="--delay:.1s">
+  <div class="panel-header">
+    <div class="panel-title"><i class="bi bi-box-seam"></i> Produtos Cadastrados</div>
+    <span class="badge-count">{{ produtos.total }} produto(s)</span>
+  </div>
+
+  {% if produtos.items %}
+  <div class="table-responsive">
+    <table class="table table-hover jp-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Unidade</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos.items %}
+        <tr class="{% if not p.ativo %}row-inactive{% endif %}">
+          <td><span class="code-badge">{{ p.codigo }}</span></td>
+          <td><strong>{{ p.nome }}</strong>
+            {% if p.descricao %}<br><small class="text-muted">{{ p.descricao[:60] }}{% if p.descricao|length > 60 %}...{% endif %}</small>{% endif %}
+          </td>
+          <td><span class="cat-badge cat-{{ p.categoria|lower }}">{{ p.categoria }}</span></td>
+          <td><span class="price-tag">R$ {{ '%.2f'|format(p.preco) }}</span></td>
+          <td><span class="unit-badge">{{ p.unidade }}</span></td>
+          <td>
+            {% if p.ativo %}
+            <span class="status-badge status-confirmado">Ativo</span>
+            {% else %}
+            <span class="status-badge status-cancelado">Inativo</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('produto_editar', id=p.id) }}" class="btn-icon" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if p.ativo %}
+            <form method="post" action="{{ url_for('produto_excluir', id=p.id) }}" class="d-inline" onsubmit="return confirm('Desativar este produto?')">
+              <button type="submit" class="btn-icon btn-icon-danger" title="Desativar">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginação -->
+  {% if produtos.pages > 1 %}
+  <div class="jp-pagination">
+    {% if produtos.has_prev %}
+    <a href="{{ url_for('produtos_lista', page=produtos.prev_num, q=q, categoria=categoria) }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% endif %}
+    {% for n in produtos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if n %}
+      <a href="{{ url_for('produtos_lista', page=n, q=q, categoria=categoria) }}" class="page-btn {% if n == produtos.page %}active{% endif %}">{{ n }}</a>
+      {% else %}
+      <span class="page-dots">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if produtos.has_next %}
+    <a href="{{ url_for('produtos_lista', page=produtos.next_num, q=q, categoria=categoria) }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-box-seam"></i>
+    <p>Nenhum produto encontrado.</p>
+    <a href="{{ url_for('produto_novo') }}" class="btn-primary-jp">Cadastrar produto</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

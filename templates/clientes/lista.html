@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block content %}
+
+<div class="page-actions mb-4 animate-fade">
+  <a href="{{ url_for('cliente_novo') }}" class="btn-primary-jp">
+    <i class="bi bi-person-plus"></i> Novo Cliente
+  </a>
+</div>
+
+<!-- Busca -->
+<div class="card-panel mb-4 animate-fade" style="--delay:.05s">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-8">
+      <label class="form-label-jp">Buscar cliente</label>
+      <div class="input-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="form-control jp-input" value="{{ q }}" placeholder="Nome, CPF/CNPJ ou telefone...">
+      </div>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button type="submit" class="btn-primary-jp w-100"><i class="bi bi-search"></i> Buscar</button>
+      <a href="{{ url_for('clientes_lista') }}" class="btn-outline-jp"><i class="bi bi-x"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Tabela -->
+<div class="card-panel animate-fade" style="--delay:.1s">
+  <div class="panel-header">
+    <div class="panel-title"><i class="bi bi-people"></i> Clientes Cadastrados</div>
+    <span class="badge-count">{{ clientes.total }} cliente(s)</span>
+  </div>
+
+  {% if clientes.items %}
+  <div class="table-responsive">
+    <table class="table table-hover jp-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF/CNPJ</th>
+          <th>Telefone</th>
+          <th>Cidade/UF</th>
+          <th>Pedidos</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes.items %}
+        <tr>
+          <td>
+            <div class="client-avatar">{{ c.nome[0] }}</div>
+            <strong>{{ c.nome }}</strong>
+            {% if c.email %}<br><small class="text-muted">{{ c.email }}</small>{% endif %}
+          </td>
+          <td>{{ c.cpf_cnpj or '-' }}</td>
+          <td>{{ c.telefone or '-' }}</td>
+          <td>{{ c.cidade or '' }}{% if c.cidade and c.estado %}/{% endif %}{{ c.estado or '' }}{% if not c.cidade and not c.estado %}-{% endif %}</td>
+          <td><span class="badge-count-sm">{{ c.pedidos|length }}</span></td>
+          <td>
+            <a href="{{ url_for('cliente_editar', id=c.id) }}" class="btn-icon" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{{ url_for('pedidos_lista') }}?q={{ c.nome }}" class="btn-icon btn-icon-pink" title="Ver pedidos">
+              <i class="bi bi-cart3"></i>
+            </a>
+            <form method="post" action="{{ url_for('cliente_excluir', id=c.id) }}" class="d-inline" onsubmit="return confirm('Remover este cliente?')">
+              <button type="submit" class="btn-icon btn-icon-danger" title="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if clientes.pages > 1 %}
+  <div class="jp-pagination">
+    {% if clientes.has_prev %}
+    <a href="{{ url_for('clientes_lista', page=clientes.prev_num, q=q) }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% endif %}
+    {% for n in clientes.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if n %}
+      <a href="{{ url_for('clientes_lista', page=n, q=q) }}" class="page-btn {% if n == clientes.page %}active{% endif %}">{{ n }}</a>
+      {% else %}<span class="page-dots">…</span>{% endif %}
+    {% endfor %}
+    {% if clientes.has_next %}
+    <a href="{{ url_for('clientes_lista', page=clientes.next_num, q=q) }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-people"></i>
+    <p>Nenhum cliente encontrado.</p>
+    <a href="{{ url_for('cliente_novo') }}" class="btn-primary-jp">Cadastrar cliente</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

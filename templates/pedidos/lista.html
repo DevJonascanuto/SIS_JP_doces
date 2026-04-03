@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Pedidos{% endblock %}
+{% block page_title %}Pedidos{% endblock %}
+
+{% block content %}
+
+<div class="page-actions mb-4 animate-fade">
+  <a href="{{ url_for('pedido_novo') }}" class="btn-primary-jp">
+    <i class="bi bi-plus-lg"></i> Novo Pedido
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-panel mb-4 animate-fade" style="--delay:.05s">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label-jp">Buscar pedido ou cliente</label>
+      <div class="input-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="form-control jp-input" value="{{ q }}" placeholder="Nº pedido ou nome do cliente...">
+      </div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label-jp">Status</label>
+      <select name="status" class="form-select jp-select">
+        <option value="">Todos</option>
+        <option value="pendente"   {% if status=='pendente' %}selected{% endif %}>Pendente</option>
+        <option value="confirmado" {% if status=='confirmado' %}selected{% endif %}>Confirmado</option>
+        <option value="entregue"   {% if status=='entregue' %}selected{% endif %}>Entregue</option>
+        <option value="cancelado"  {% if status=='cancelado' %}selected{% endif %}>Cancelado</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn-primary-jp w-100"><i class="bi bi-search"></i> Filtrar</button>
+      <a href="{{ url_for('pedidos_lista') }}" class="btn-outline-jp"><i class="bi bi-x"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Tabela -->
+<div class="card-panel animate-fade" style="--delay:.1s">
+  <div class="panel-header">
+    <div class="panel-title"><i class="bi bi-cart3"></i> Lista de Pedidos</div>
+    <span class="badge-count">{{ pedidos.total }} pedido(s)</span>
+  </div>
+
+  {% if pedidos.items %}
+  <div class="table-responsive">
+    <table class="table table-hover jp-table">
+      <thead>
+        <tr>
+          <th>Nº Pedido</th>
+          <th>Cliente</th>
+          <th>Data</th>
+          <th>Itens</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos.items %}
+        <tr>
+          <td><span class="code-badge">{{ p.numero }}</span></td>
+          <td><strong>{{ p.cliente.nome }}</strong></td>
+          <td>{{ p.data.strftime('%d/%m/%Y %H:%M') if p.data else '-' }}</td>
+          <td><span class="badge-count-sm">{{ p.itens|length }}</span></td>
+          <td><span class="price-tag">R$ {{ '%.2f'|format(p.total) }}</span></td>
+          <td><span class="status-badge status-{{ p.status }}">{{ p.status|capitalize }}</span></td>
+          <td>
+            <a href="{{ url_for('pedido_detalhe', id=p.id) }}" class="btn-icon" title="Ver detalhes">
+              <i class="bi bi-eye"></i>
+            </a>
+            <a href="{{ url_for('pedido_pdf', id=p.id) }}" class="btn-icon btn-icon-pink" title="Gerar PDF" target="_blank">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </a>
+            <form method="post" action="{{ url_for('pedido_excluir', id=p.id) }}" class="d-inline"
+                  onsubmit="return confirm('Excluir pedido {{ p.numero }}?')">
+              <button type="submit" class="btn-icon btn-icon-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pedidos.pages > 1 %}
+  <div class="jp-pagination">
+    {% if pedidos.has_prev %}
+    <a href="{{ url_for('pedidos_lista', page=pedidos.prev_num, q=q, status=status) }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% endif %}
+    {% for n in pedidos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if n %}
+      <a href="{{ url_for('pedidos_lista', page=n, q=q, status=status) }}" class="page-btn {% if n == pedidos.page %}active{% endif %}">{{ n }}</a>
+      {% else %}<span class="page-dots">…</span>{% endif %}
+    {% endfor %}
+    {% if pedidos.has_next %}
+    <a href="{{ url_for('pedidos_lista', page=pedidos.next_num, q=q, status=status) }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-cart-x"></i>
+    <p>Nenhum pedido encontrado.</p>
+    <a href="{{ url_for('pedido_novo') }}" class="btn-primary-jp">Criar pedido</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

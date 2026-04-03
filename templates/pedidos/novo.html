@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+{% block title %}Novo Pedido{% endblock %}
+{% block page_title %}Novo Pedido{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 animate-fade">
+  <a href="{{ url_for('pedidos_lista') }}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Voltar para Pedidos
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- ── Painel esquerdo ─────────────────────────────────────────────────── -->
+  <div class="col-lg-7">
+
+    <!-- Cliente -->
+    <div class="card-panel animate-fade" style="--delay:.05s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-person"></i> Cliente</div>
+      </div>
+      <div class="position-relative">
+        <div class="input-search-wrap">
+          <i class="bi bi-search"></i>
+          <input type="text" id="clienteBusca" class="form-control jp-input"
+                 placeholder="Digite o nome do cliente para buscar..." autocomplete="off">
+        </div>
+        <div id="clienteDropdown" class="autocomplete-dropdown d-none"></div>
+      </div>
+      <div id="clienteSelecionado" class="client-selected-card d-none mt-3">
+        <div class="csc-avatar" id="cscAvatar"></div>
+        <div class="csc-info">
+          <div class="csc-nome" id="cscNome"></div>
+          <div class="csc-sub" id="cscSub"></div>
+        </div>
+        <button type="button" class="csc-remove" id="cscRemove" title="Remover">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      <input type="hidden" id="clienteId">
+    </div>
+
+    <!-- Busca de produto -->
+    <div class="card-panel mt-4 animate-fade" style="--delay:.1s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-plus-circle"></i> Adicionar Produto</div>
+      </div>
+      <div class="position-relative">
+        <div class="input-search-wrap">
+          <i class="bi bi-search"></i>
+          <input type="text" id="produtoBusca" class="form-control jp-input"
+                 placeholder="Digite o nome ou código do produto..." autocomplete="off">
+        </div>
+        <div id="produtoDropdown" class="autocomplete-dropdown d-none"></div>
+      </div>
+
+      <!-- Produto selecionado para adicionar -->
+      <div id="produtoPreview" class="produto-preview d-none mt-3">
+        <div class="pp-info">
+          <span class="pp-codigo" id="ppCodigo"></span>
+          <span class="pp-nome" id="ppNome"></span>
+          <span class="pp-cat" id="ppCat"></span>
+        </div>
+        <div class="pp-controls">
+          <div class="qty-control">
+            <button type="button" class="qty-btn" id="qtyMinus"><i class="bi bi-dash"></i></button>
+            <input type="number" id="qtyInput" class="qty-input" value="1" min="1" step="1">
+            <button type="button" class="qty-btn" id="qtyPlus"><i class="bi bi-plus"></i></button>
+          </div>
+          <div class="pp-price">
+            R$ <span id="ppPreco">0,00</span>
+            <small id="ppUnidade" class="text-muted"></small>
+          </div>
+          <button type="button" id="btnAddItem" class="btn-add-item">
+            <i class="bi bi-cart-plus"></i> Adicionar
+          </button>
+        </div>
+      </div>
+
+      <input type="hidden" id="produtoSelecionadoId">
+      <input type="hidden" id="produtoSelecionadoPreco">
+    </div>
+
+  </div>
+
+  <!-- ── Painel direito - Carrinho ──────────────────────────────────────── -->
+  <div class="col-lg-5">
+    <div class="card-panel animate-fade sticky-panel" style="--delay:.15s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-cart3"></i> Itens do Pedido</div>
+        <span class="badge-count" id="itemCount">0 item</span>
+      </div>
+
+      <div id="carrinhoVazio" class="empty-state-sm">
+        <i class="bi bi-cart-x"></i>
+        <p>Adicione produtos ao pedido</p>
+      </div>
+
+      <div id="carrinhoItens" class="carrinho-list d-none"></div>
+
+      <!-- Totais -->
+      <div id="carrinhoTotais" class="carrinho-totais d-none">
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span id="subtotalVal">R$ 0,00</span>
+        </div>
+        <div class="total-row">
+          <span>Desconto (R$):</span>
+          <input type="number" id="descontoInput" class="discount-input" value="0" min="0" step="0.01">
+        </div>
+        <div class="total-row total-final">
+          <span>TOTAL:</span>
+          <span id="totalVal">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div id="obsSection" class="d-none mt-3">
+        <label class="form-label-jp">Observações do Pedido</label>
+        <textarea id="obsInput" class="form-control jp-input" rows="2"
+                  placeholder="Informações adicionais..."></textarea>
+      </div>
+
+      <!-- Botão finalizar -->
+      <div class="mt-3">
+        <button type="button" id="btnFinalizar" class="btn-primary-jp w-100 btn-lg-jp" disabled>
+          <i class="bi bi-check-circle"></i> Finalizar Pedido
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de confirmação / sucesso -->
+<div class="modal fade" id="modalSucesso" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content jp-modal">
+      <div class="modal-body text-center py-5">
+        <div class="success-icon">🎉</div>
+        <h4 class="mt-3">Pedido Criado!</h4>
+        <p class="text-muted" id="modalMsg"></p>
+        <div class="d-flex gap-3 justify-content-center mt-4">
+          <a href="#" id="btnVerPedido" class="btn-primary-jp">
+            <i class="bi bi-eye"></i> Ver Pedido
+          </a>
+          <a href="#" id="btnGerarPDF" class="btn-outline-jp" target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Estado do carrinho ────────────────────────────────────────────────────
+const state = {
+  clienteId: null,
+  itens: [],   // {produto_id, codigo, nome, categoria, unidade, preco_unitario, quantidade, subtotal}
+};
+
+// ── Autocomplete de cliente ───────────────────────────────────────────────
+const clienteBusca    = document.getElementById('clienteBusca');
+const clienteDropdown = document.getElementById('clienteDropdown');
+const clienteId       = document.getElementById('clienteId');
+
+let clienteTimer;
+clienteBusca.addEventListener('input', () => {
+  clearTimeout(clienteTimer);
+  const q = clienteBusca.value.trim();
+  if (q.length < 1) { clienteDropdown.classList.add('d-none'); return; }
+  clienteTimer = setTimeout(() => fetchClientes(q), 250);
+});
+
+async function fetchClientes(q) {
+  const res  = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(q)}`);
+  const data = await res.json();
+  renderClienteDropdown(data);
+}
+
+function renderClienteDropdown(data) {
+  if (!data.length) { clienteDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum cliente encontrado</div>'; clienteDropdown.classList.remove('d-none'); return; }
+  clienteDropdown.innerHTML = data.map(c => `
+    <div class="ac-item" data-id="${c.id}" data-nome="${c.nome}" data-tel="${c.telefone}" data-cidade="${c.cidade}" data-uf="${c.estado}">
+      <div class="ac-icon-wrap"><i class="bi bi-person"></i></div>
+      <div>
+        <div class="ac-main">${c.nome}</div>
+        <div class="ac-sub">${c.telefone || ''} ${c.cidade ? '· ' + c.cidade : ''}</div>
+      </div>
+    </div>
+  `).join('');
+  clienteDropdown.classList.remove('d-none');
+  clienteDropdown.querySelectorAll('.ac-item[data-id]').forEach(el => {
+    el.addEventListener('click', () => selecionarCliente(el));
+  });
+}
+
+function selecionarCliente(el) {
+  state.clienteId = el.dataset.id;
+  clienteId.value = el.dataset.id;
+  document.getElementById('cscAvatar').textContent = el.dataset.nome[0];
+  document.getElementById('cscNome').textContent   = el.dataset.nome;
+  document.getElementById('cscSub').textContent    = [el.dataset.tel, el.dataset.cidade, el.dataset.uf].filter(Boolean).join(' · ');
+  document.getElementById('clienteSelecionado').classList.remove('d-none');
+  clienteBusca.value = '';
+  clienteDropdown.classList.add('d-none');
+  checkFinalizar();
+}
+
+document.getElementById('cscRemove').addEventListener('click', () => {
+  state.clienteId = null;
+  clienteId.value = '';
+  document.getElementById('clienteSelecionado').classList.add('d-none');
+  checkFinalizar();
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#clienteBusca') && !e.target.closest('#clienteDropdown'))
+    clienteDropdown.classList.add('d-none');
+});
+
+// ── Autocomplete de produto ───────────────────────────────────────────────
+const produtoBusca    = document.getElementById('produtoBusca');
+const produtoDropdown = document.getElementById('produtoDropdown');
+let produtoTimer;
+
+produtoBusca.addEventListener('input', () => {
+  clearTimeout(produtoTimer);
+  const q = produtoBusca.value.trim();
+  if (q.length < 1) { produtoDropdown.classList.add('d-none'); return; }
+  produtoTimer = setTimeout(() => fetchProdutos(q), 250);
+});
+
+async function fetchProdutos(q) {
+  const res  = await fetch(`/api/produtos/buscar?q=${encodeURIComponent(q)}`);
+  const data = await res.json();
+  renderProdutoDropdown(data);
+}
+
+function renderProdutoDropdown(data) {
+  if (!data.length) { produtoDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum produto encontrado</div>'; produtoDropdown.classList.remove('d-none'); return; }
+  produtoDropdown.innerHTML = data.map(p => `
+    <div class="ac-item" data-id="${p.id}" data-codigo="${p.codigo}" data-nome="${p.nome}"
+         data-cat="${p.categoria}" data-preco="${p.preco}" data-unidade="${p.unidade}">
+      <div class="ac-icon-wrap ac-icon-product"><span class="ac-code">${p.codigo}</span></div>
+      <div style="flex:1">
+        <div class="ac-main">${p.nome}</div>
+        <div class="ac-sub">${p.categoria} · ${p.unidade}</div>
+      </div>
+      <div class="ac-price">R$ ${fmtBR(p.preco)}</div>
+    </div>
+  `).join('');
+  produtoDropdown.classList.remove('d-none');
+  produtoDropdown.querySelectorAll('.ac-item[data-id]').forEach(el => {
+    el.addEventListener('click', () => selecionarProduto(el));
+  });
+}
+
+function selecionarProduto(el) {
+  document.getElementById('produtoSelecionadoId').value    = el.dataset.id;
+  document.getElementById('produtoSelecionadoPreco').value = el.dataset.preco;
+  document.getElementById('ppCodigo').textContent = el.dataset.codigo;
+  document.getElementById('ppNome').textContent   = el.dataset.nome;
+  document.getElementById('ppCat').textContent    = el.dataset.cat;
+  document.getElementById('ppPreco').textContent  = fmtBR(el.dataset.preco);
+  document.getElementById('ppUnidade').textContent = '/ ' + el.dataset.unidade;
+  document.getElementById('qtyInput').value = 1;
+  document.getElementById('produtoPreview').classList.remove('d-none');
+  produtoBusca.value = '';
+  produtoDropdown.classList.add('d-none');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#produtoBusca') && !e.target.closest('#produtoDropdown'))
+    produtoDropdown.classList.add('d-none');
+});
+
+// ── Controles de quantidade ───────────────────────────────────────────────
+document.getElementById('qtyMinus').addEventListener('click', () => {
+  const inp = document.getElementById('qtyInput');
+  if (parseInt(inp.value) > 1) inp.value = parseInt(inp.value) - 1;
+});
+document.getElementById('qtyPlus').addEventListener('click', () => {
+  const inp = document.getElementById('qtyInput');
+  inp.value = parseInt(inp.value) + 1;
+});
+
+// ── Adicionar item ao carrinho ────────────────────────────────────────────
+document.getElementById('btnAddItem').addEventListener('click', () => {
+  const prodId  = document.getElementById('produtoSelecionadoId').value;
+  const preco   = parseFloat(document.getElementById('produtoSelecionadoPreco').value);
+  const qty     = parseFloat(document.getElementById('qtyInput').value);
+  const codigo  = document.getElementById('ppCodigo').textContent;
+  const nome    = document.getElementById('ppNome').textContent;
+  const cat     = document.getElementById('ppCat').textContent;
+  const unidade = document.getElementById('ppUnidade').textContent.replace('/ ','');
+  if (!prodId || qty <= 0) return;
+
+  const existente = state.itens.find(i => i.produto_id == prodId);
+  if (existente) {
+    existente.quantidade += qty;
+    existente.subtotal = round2(existente.quantidade * existente.preco_unitario);
+  } else {
+    state.itens.push({
+      produto_id: prodId, codigo, nome, categoria: cat, unidade,
+      preco_unitario: preco, quantidade: qty,
+      subtotal: round2(qty * preco),
+    });
+  }
+
+  document.getElementById('produtoPreview').classList.add('d-none');
+  document.getElementById('produtoSelecionadoId').value = '';
+  renderCarrinho();
+  checkFinalizar();
+  animatePulse(document.getElementById('itemCount'));
+});
+
+// ── Renderizar carrinho ───────────────────────────────────────────────────
+function renderCarrinho() {
+  const lista   = document.getElementById('carrinhoItens');
+  const vazio   = document.getElementById('carrinhoVazio');
+  const totais  = document.getElementById('carrinhoTotais');
+  const obsSection = document.getElementById('obsSection');
+  const n = state.itens.length;
+  document.getElementById('itemCount').textContent = n + (n === 1 ? ' item' : ' itens');
+
+  if (!n) {
+    lista.classList.add('d-none');
+    vazio.style.display = '';
+    totais.classList.add('d-none');
+    obsSection.classList.add('d-none');
+    return;
+  }
+  vazio.style.display = 'none';
+  lista.classList.remove('d-none');
+  totais.classList.remove('d-none');
+  obsSection.classList.remove('d-none');
+
+  lista.innerHTML = state.itens.map((item, idx) => `
+    <div class="cart-item" id="cartItem${idx}">
+      <div class="ci-info">
+        <span class="ci-code">${item.codigo}</span>
+        <span class="ci-nome">${item.nome}</span>
+      </div>
+      <div class="ci-controls">
+        <button class="qty-btn-sm" onclick="changeQty(${idx}, -1)"><i class="bi bi-dash"></i></button>
+        <input type="number" class="qty-input-sm" value="${item.quantidade}" min="0.001" step="1"
+               onchange="setQty(${idx}, this.value)">
+        <button class="qty-btn-sm" onclick="changeQty(${idx}, 1)"><i class="bi bi-plus"></i></button>
+      </div>
+      <div class="ci-price">R$ ${fmtBR(item.subtotal)}</div>
+      <button class="ci-remove" onclick="removeItem(${idx})" title="Remover"><i class="bi bi-x"></i></button>
+    </div>
+  `).join('');
+
+  recalcTotais();
+}
+
+function changeQty(idx, delta) {
+  const item = state.itens[idx];
+  item.quantidade = Math.max(0.001, item.quantidade + delta);
+  item.subtotal   = round2(item.quantidade * item.preco_unitario);
+  renderCarrinho();
+}
+
+function setQty(idx, val) {
+  const item = state.itens[idx];
+  const q = parseFloat(val);
+  if (!q || q <= 0) { removeItem(idx); return; }
+  item.quantidade = q;
+  item.subtotal   = round2(q * item.preco_unitario);
+  renderCarrinho();
+}
+
+function removeItem(idx) {
+  state.itens.splice(idx, 1);
+  renderCarrinho();
+  checkFinalizar();
+}
+
+function recalcTotais() {
+  const subtotal = state.itens.reduce((s, i) => s + i.subtotal, 0);
+  const desc = parseFloat(document.getElementById('descontoInput').value) || 0;
+  const total = Math.max(0, subtotal - desc);
+  document.getElementById('subtotalVal').textContent = 'R$ ' + fmtBR(subtotal);
+  document.getElementById('totalVal').textContent    = 'R$ ' + fmtBR(total);
+}
+
+document.getElementById('descontoInput').addEventListener('input', recalcTotais);
+
+// ── Finalizar pedido ──────────────────────────────────────────────────────
+function checkFinalizar() {
+  const btn = document.getElementById('btnFinalizar');
+  btn.disabled = !state.clienteId || state.itens.length === 0;
+}
+
+document.getElementById('btnFinalizar').addEventListener('click', async () => {
+  const btn = document.getElementById('btnFinalizar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+
+  const payload = {
+    cliente_id:  parseInt(state.clienteId),
+    desconto:    parseFloat(document.getElementById('descontoInput').value) || 0,
+    observacoes: document.getElementById('obsInput').value,
+    itens: state.itens.map(i => ({
+      produto_id:     parseInt(i.produto_id),
+      quantidade:     i.quantidade,
+      preco_unitario: i.preco_unitario,
+    })),
+  };
+
+  try {
+    const res  = await fetch('/pedidos/novo', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('modalMsg').textContent = `Pedido ${data.numero} criado com sucesso!`;
+      document.getElementById('btnVerPedido').href = `/pedidos/${data.pedido_id}`;
+      document.getElementById('btnGerarPDF').href  = `/pedidos/${data.pedido_id}/pdf`;
+      new bootstrap.Modal(document.getElementById('modalSucesso')).show();
+    } else {
+      alert('Erro: ' + data.msg);
+    }
+  } catch(e) {
+    alert('Erro de comunicação com o servidor.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle"></i> Finalizar Pedido';
+});
+
+// ── Utilitários ───────────────────────────────────────────────────────────
+function fmtBR(n) {
+  return parseFloat(n).toFixed(2).replace('.', ',');
+}
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+function animatePulse(el) {
+  el.classList.remove('pulse-anim');
+  void el.offsetWidth;
+  el.classList.add('pulse-anim');
+}
+</script>
+{% endblock %}

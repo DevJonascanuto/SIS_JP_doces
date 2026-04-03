@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Pedido {{ pedido.numero }}{% endblock %}
+{% block page_title %}Pedido {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 d-flex gap-2 align-items-center animate-fade">
+  <a href="{{ url_for('pedidos_lista') }}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Voltar
+  </a>
+  <a href="{{ url_for('pedido_pdf', id=pedido.id) }}" class="btn-primary-jp ms-auto" target="_blank">
+    <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- ── Info do pedido ──────────────────────────────────────────────────── -->
+  <div class="col-lg-4">
+
+    <!-- Card pedido -->
+    <div class="card-panel animate-fade" style="--delay:.05s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-receipt"></i> Pedido</div>
+        <span class="status-badge status-{{ pedido.status }}">{{ pedido.status|capitalize }}</span>
+      </div>
+      <div class="detail-grid">
+        <div class="dg-item">
+          <div class="dg-label">Número</div>
+          <div class="dg-value"><span class="code-badge">{{ pedido.numero }}</span></div>
+        </div>
+        <div class="dg-item">
+          <div class="dg-label">Data</div>
+          <div class="dg-value">{{ pedido.data.strftime('%d/%m/%Y %H:%M') if pedido.data else '-' }}</div>
+        </div>
+        <div class="dg-item">
+          <div class="dg-label">Itens</div>
+          <div class="dg-value">{{ itens|length }}</div>
+        </div>
+        <div class="dg-item">
+          <div class="dg-label">Desconto</div>
+          <div class="dg-value">R$ {{ '%.2f'|format(pedido.desconto) }}</div>
+        </div>
+        <div class="dg-item dg-total">
+          <div class="dg-label">TOTAL</div>
+          <div class="dg-value"><span class="price-tag price-lg">R$ {{ '%.2f'|format(pedido.total) }}</span></div>
+        </div>
+      </div>
+
+      {% if pedido.observacoes %}
+      <div class="obs-box mt-3">
+        <div class="obs-label"><i class="bi bi-chat-text"></i> Observações</div>
+        <div class="obs-text">{{ pedido.observacoes }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Card cliente -->
+    <div class="card-panel mt-4 animate-fade" style="--delay:.1s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-person"></i> Cliente</div>
+        <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn-icon" title="Editar cliente"><i class="bi bi-pencil"></i></a>
+      </div>
+      <div class="client-detail">
+        <div class="cd-avatar">{{ cliente.nome[0] }}</div>
+        <div class="cd-info">
+          <div class="cd-nome">{{ cliente.nome }}</div>
+          {% if cliente.cpf_cnpj %}<div class="cd-item"><i class="bi bi-credit-card"></i> {{ cliente.cpf_cnpj }}</div>{% endif %}
+          {% if cliente.telefone %}<div class="cd-item"><i class="bi bi-telephone"></i> {{ cliente.telefone }}</div>{% endif %}
+          {% if cliente.email %}<div class="cd-item"><i class="bi bi-envelope"></i> {{ cliente.email }}</div>{% endif %}
+          {% if cliente.cidade %}<div class="cd-item"><i class="bi bi-geo-alt"></i> {{ cliente.cidade }}{% if cliente.estado %}/{{ cliente.estado }}{% endif %}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Alterar status -->
+    <div class="card-panel mt-4 animate-fade" style="--delay:.15s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-arrow-repeat"></i> Alterar Status</div>
+      </div>
+      <form method="post" action="{{ url_for('pedido_status', id=pedido.id) }}">
+        <div class="d-flex gap-2">
+          <select name="status" class="form-select jp-select">
+            <option value="pendente"   {% if pedido.status=='pendente' %}selected{% endif %}>Pendente</option>
+            <option value="confirmado" {% if pedido.status=='confirmado' %}selected{% endif %}>Confirmado</option>
+            <option value="entregue"   {% if pedido.status=='entregue' %}selected{% endif %}>Entregue</option>
+            <option value="cancelado"  {% if pedido.status=='cancelado' %}selected{% endif %}>Cancelado</option>
+          </select>
+          <button type="submit" class="btn-primary-jp">Salvar</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- ── Itens do pedido ─────────────────────────────────────────────────── -->
+  <div class="col-lg-8">
+    <div class="card-panel animate-fade" style="--delay:.05s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-list-ul"></i> Itens do Pedido</div>
+        <span class="badge-count">{{ itens|length }} produto(s)</span>
+      </div>
+
+      {% if itens %}
+      <div class="table-responsive">
+        <table class="table jp-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Produto</th>
+              <th>Categoria</th>
+              <th class="text-center">Qtd</th>
+              <th class="text-center">Un</th>
+              <th class="text-end">Vl. Unit.</th>
+              <th class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set ns = namespace(subtotal=0) %}
+            {% for item in itens %}
+            {% set ns.subtotal = ns.subtotal + item.subtotal|float %}
+            <tr>
+              <td><span class="code-badge">{{ item.produto.codigo }}</span></td>
+              <td><strong>{{ item.produto.nome }}</strong></td>
+              <td><span class="cat-badge cat-{{ item.produto.categoria|lower }}">{{ item.produto.categoria }}</span></td>
+              <td class="text-center">{{ '%g'|format(item.quantidade|float) }}</td>
+              <td class="text-center"><span class="unit-badge">{{ item.produto.unidade }}</span></td>
+              <td class="text-end">R$ {{ '%.2f'|format(item.preco_unitario) }}</td>
+              <td class="text-end"><strong>R$ {{ '%.2f'|format(item.subtotal) }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="tfoot-row">
+              <td colspan="6" class="text-end">Subtotal:</td>
+              <td class="text-end"><strong>R$ {{ '%.2f'|format(ns.subtotal) }}</strong></td>
+            </tr>
+            {% if pedido.desconto|float > 0 %}
+            <tr class="tfoot-row">
+              <td colspan="6" class="text-end">Desconto:</td>
+              <td class="text-end text-danger">- R$ {{ '%.2f'|format(pedido.desconto) }}</td>
+            </tr>
+            {% endif %}
+            <tr class="tfoot-total">
+              <td colspan="6" class="text-end">TOTAL GERAL:</td>
+              <td class="text-end"><span class="price-tag price-lg">R$ {{ '%.2f'|format(pedido.total) }}</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-cart-x"></i>
+        <p>Nenhum item neste pedido.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

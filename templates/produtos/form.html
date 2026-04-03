@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if produto else 'Novo' }} Produto{% endblock %}
+{% block page_title %}{{ 'Editar' if produto else 'Novo' }} Produto{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 animate-fade">
+  <a href="{{ url_for('produtos_lista') }}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Voltar para Produtos
+  </a>
+</div>
+
+<div class="card-panel animate-fade" style="--delay:.05s; max-width: 700px;">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="bi bi-{{ 'pencil' if produto else 'plus-circle' }}"></i>
+      {{ 'Editar Produto' if produto else 'Cadastrar Novo Produto' }}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('produto_editar', id=produto.id) if produto else url_for('produto_novo') }}">
+
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <label class="form-label-jp">Código <span class="req">*</span></label>
+        <input type="text" name="codigo" class="form-control jp-input"
+               value="{{ produto.codigo if produto else form.get('codigo','') }}"
+               placeholder="Ex: 2221" required maxlength="20">
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label-jp">Nome do Produto <span class="req">*</span></label>
+        <input type="text" name="nome" class="form-control jp-input"
+               value="{{ produto.nome if produto else form.get('nome','') }}"
+               placeholder="Ex: AMENDOIM DOCE DELÍCIA 400G" required maxlength="120">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">Categoria <span class="req">*</span></label>
+        <select name="categoria" class="form-select jp-select" required>
+          <option value="">Selecione...</option>
+          {% for cat in categorias %}
+          <option value="{{ cat }}"
+            {% if (produto and produto.categoria == cat) or form.get('categoria') == cat %}selected{% endif %}>
+            {{ cat }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label-jp">Preço (R$) <span class="req">*</span></label>
+        <input type="number" name="preco" class="form-control jp-input"
+               value="{{ '%.2f'|format(produto.preco) if produto else form.get('preco','') }}"
+               placeholder="0,00" step="0.01" min="0" required>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label-jp">Unidade</label>
+        <select name="unidade" class="form-select jp-select">
+          {% for un in ['UN','CX','PT','DP','PCT','FD','BD','CT','ESP','KG'] %}
+          <option value="{{ un }}"
+            {% if (produto and produto.unidade == un) or form.get('unidade') == un %}selected{% endif %}>
+            {{ un }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label-jp">Descrição / Observações</label>
+        <textarea name="descricao" class="form-control jp-input" rows="3"
+                  placeholder="Descrição adicional do produto...">{{ produto.descricao if produto else form.get('descricao','') }}</textarea>
+      </div>
+
+      {% if produto %}
+      <div class="col-12">
+        <div class="form-check jp-check">
+          <input class="form-check-input" type="checkbox" name="ativo" id="chkAtivo" {% if produto.ativo %}checked{% endif %}>
+          <label class="form-check-label" for="chkAtivo">Produto ativo</label>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <div class="form-footer mt-4">
+      <button type="submit" class="btn-primary-jp">
+        <i class="bi bi-check-lg"></i>
+        {{ 'Salvar Alterações' if produto else 'Cadastrar Produto' }}
+      </button>
+      <a href="{{ url_for('produtos_lista') }}" class="btn-outline-jp">Cancelar</a>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}
