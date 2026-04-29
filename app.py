@@ -6,6 +6,7 @@ from utils.pdf_generator import gerar_pdf_pedido
 from datetime import datetime
 from decimal import Decimal
 import re
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -90,18 +91,25 @@ def produto_novo():
         preco     = request.form['preco'].replace(',', '.')
         unidade   = request.form.get('unidade', 'UN').upper()
         descricao = request.form.get('descricao', '').strip()
+        preco_compra = request.form.get('preco_compra', '0').replace(',', '.') or '0'
+        is_ajax   = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if Produto.query.filter_by(codigo=codigo).first():
+            if is_ajax:
+                return jsonify({'ok': False, 'msg': 'Código já cadastrado!'})
             flash('Código já cadastrado!', 'danger')
-            return render_template('produtos/form.html', categorias=CATEGORIAS,
-                                   form=request.form)
+            return render_template('produtos/form.html', categorias=CATEGORIAS, form=request.form)
 
         p = Produto(codigo=codigo, nome=nome, categoria=categoria,
-                    preco=Decimal(preco), unidade=unidade, descricao=descricao)
+                    preco=Decimal(preco), preco_compra=Decimal(preco_compra),
+                    unidade=unidade, descricao=descricao)
         db.session.add(p)
         db.session.commit()
+
+        if is_ajax:
+            return jsonify({'ok': True, 'msg': f'Produto <strong>{nome}</strong> cadastrado!'})
         flash(f'Produto <strong>{nome}</strong> cadastrado com sucesso!', 'success')
-        return redirect(url_for('produtos_lista'))
+        return redirect(url_for('produto_novo'))
 
     return render_template('produtos/form.html', categorias=CATEGORIAS, form={})
 
@@ -117,16 +125,17 @@ def produto_editar(id):
             return render_template('produtos/form.html', categorias=CATEGORIAS,
                                    form=request.form, produto=p)
 
-        p.codigo    = codigo_novo
-        p.nome      = request.form['nome'].strip().upper()
-        p.categoria = request.form['categoria']
-        p.preco     = Decimal(request.form['preco'].replace(',', '.'))
-        p.unidade   = request.form.get('unidade', 'UN').upper()
-        p.descricao = request.form.get('descricao', '').strip()
-        p.ativo     = 'ativo' in request.form
+        p.codigo       = codigo_novo
+        p.nome         = request.form['nome'].strip().upper()
+        p.categoria    = request.form['categoria']
+        p.preco        = Decimal(request.form['preco'].replace(',', '.'))
+        p.preco_compra = Decimal((request.form.get('preco_compra', '0') or '0').replace(',', '.'))
+        p.unidade      = request.form.get('unidade', 'UN').upper()
+        p.descricao    = request.form.get('descricao', '').strip()
+        p.ativo        = 'ativo' in request.form
         db.session.commit()
         flash('Produto atualizado!', 'success')
-        return redirect(url_for('produtos_lista'))
+        return redirect(url_for('produto_editar', id=p.id))
 
     return render_template('produtos/form.html', categorias=CATEGORIAS,
                            form={}, produto=p)
@@ -139,6 +148,22 @@ def produto_excluir(id):
     db.session.commit()
     flash('Produto desativado!', 'warning')
     return redirect(url_for('produtos_lista'))
+
+
+# ── API de verificação de código duplicado ───────────────────────────────────
+@app.route('/api/produtos/checar-codigo')
+def api_checar_codigo():
+    codigo = request.args.get('codigo', '').strip().upper()
+    excluir_id = request.args.get('excluir_id', type=int)
+    if not codigo:
+        return jsonify({'existe': False})
+    query = Produto.query.filter_by(codigo=codigo)
+    if excluir_id:
+        query = query.filter(Produto.id != excluir_id)
+    p = query.first()
+    if p:
+        return jsonify({'existe': True, 'nome': p.nome, 'id': p.id, 'ativo': p.ativo})
+    return jsonify({'existe': False})
 
 
 # ── API de busca de produtos (para o pedido) ─────────────────────────────────
@@ -351,6 +376,15 @@ def pedido_pdf(id):
     itens   = ItemPedido.query.filter_by(pedido_id=id).all()
     buf = gerar_pdf_pedido(pedido, cliente, itens)
     nome_arquivo = f'Pedido_{pedido.numero}.pdf'
+
+    # Salvar na pasta pdfs/
+    pasta_pdfs = os.path.join(os.path.dirname(__file__), 'pdfs')
+    os.makedirs(pasta_pdfs, exist_ok=True)
+    caminho = os.path.join(pasta_pdfs, nome_arquivo)
+    with open(caminho, 'wb') as f:
+        f.write(buf.read())
+    buf.seek(0)
+
     return send_file(
         buf,
         mimetype='application/pdf',

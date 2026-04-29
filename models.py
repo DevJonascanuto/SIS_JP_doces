@@ -10,6 +10,7 @@ class Produto(db.Model):
     categoria   = db.Column(db.String(50), nullable=False)
     descricao   = db.Column(db.Text)
     preco       = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    preco_compra = db.Column(db.Numeric(10, 2), nullable=True, default=0)
     unidade     = db.Column(db.String(20), default='UN')
     ativo       = db.Column(db.Boolean, default=True)
     criado_em   = db.Column(db.DateTime, default=datetime.utcnow)
