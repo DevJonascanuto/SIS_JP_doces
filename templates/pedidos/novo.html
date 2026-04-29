@@ -16,7 +16,7 @@
   <div class="col-lg-7">
 
     <!-- Cliente -->
-    <div class="card-panel animate-fade" style="--delay:.05s">
+    <div class="card-panel animate-fade" style="--delay:.05s; position:relative; z-index:10;">
       <div class="panel-header">
         <div class="panel-title"><i class="bi bi-person"></i> Cliente</div>
       </div>
@@ -69,8 +69,11 @@
             <button type="button" class="qty-btn" id="qtyPlus"><i class="bi bi-plus"></i></button>
           </div>
           <div class="pp-price">
-            R$ <span id="ppPreco">0,00</span>
-            <small id="ppUnidade" class="text-muted"></small>
+            <label style="font-size:11px;color:#888;margin-bottom:2px;display:block;">Preço unitário (R$)</label>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <input type="number" id="ppPrecoInput" class="qty-input" style="width:90px;" min="0" step="0.01">
+              <small id="ppUnidade" class="text-muted"></small>
+            </div>
           </div>
           <button type="button" id="btnAddItem" class="btn-add-item">
             <i class="bi bi-cart-plus"></i> Adicionar
@@ -268,7 +271,7 @@ function selecionarProduto(el) {
   document.getElementById('ppCodigo').textContent = el.dataset.codigo;
   document.getElementById('ppNome').textContent   = el.dataset.nome;
   document.getElementById('ppCat').textContent    = el.dataset.cat;
-  document.getElementById('ppPreco').textContent  = fmtBR(el.dataset.preco);
+  document.getElementById('ppPrecoInput').value   = parseFloat(el.dataset.preco).toFixed(2);
   document.getElementById('ppUnidade').textContent = '/ ' + el.dataset.unidade;
   document.getElementById('qtyInput').value = 1;
   document.getElementById('produtoPreview').classList.remove('d-none');
@@ -294,7 +297,7 @@ document.getElementById('qtyPlus').addEventListener('click', () => {
 // ── Adicionar item ao carrinho ────────────────────────────────────────────
 document.getElementById('btnAddItem').addEventListener('click', () => {
   const prodId  = document.getElementById('produtoSelecionadoId').value;
-  const preco   = parseFloat(document.getElementById('produtoSelecionadoPreco').value);
+  const preco   = parseFloat(document.getElementById('ppPrecoInput').value) || 0;
   const qty     = parseFloat(document.getElementById('qtyInput').value);
   const codigo  = document.getElementById('ppCodigo').textContent;
   const nome    = document.getElementById('ppNome').textContent;
@@ -428,6 +431,7 @@ document.getElementById('btnFinalizar').addEventListener('click', async () => {
       document.getElementById('btnVerPedido').href = `/pedidos/${data.pedido_id}`;
       document.getElementById('btnGerarPDF').href  = `/pedidos/${data.pedido_id}/pdf`;
       new bootstrap.Modal(document.getElementById('modalSucesso')).show();
+      window.open(`/pedidos/${data.pedido_id}/pdf`, '_blank');
     } else {
       alert('Erro: ' + data.msg);
     }

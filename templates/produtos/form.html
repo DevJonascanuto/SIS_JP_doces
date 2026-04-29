@@ -18,15 +18,18 @@
     </div>
   </div>
 
-  <form method="post" action="{{ url_for('produto_editar', id=produto.id) if produto else url_for('produto_novo') }}">
+  <div id="alertaTopoForm" style="padding:0 20px;"></div>
+
+  <form method="post" action="{{ url_for('produto_editar', id=produto.id) if produto else url_for('produto_novo') }}" id="formProduto">
 
     <div class="row g-3">
 
       <div class="col-md-4">
         <label class="form-label-jp">Código <span class="req">*</span></label>
-        <input type="text" name="codigo" class="form-control jp-input"
+        <input type="text" name="codigo" id="inputCodigo" class="form-control jp-input"
                value="{{ produto.codigo if produto else form.get('codigo','') }}"
-               placeholder="Ex: 2221" required maxlength="20">
+               placeholder="Ex: 2221" required maxlength="20" autocomplete="off">
+        <div id="codigoAlerta" class="mt-2 d-none"></div>
       </div>
 
       <div class="col-md-8">
@@ -36,7 +39,7 @@
                placeholder="Ex: AMENDOIM DOCE DELÍCIA 400G" required maxlength="120">
       </div>
 
-      <div class="col-md-6">
+      <div class="col-md-4">
         <label class="form-label-jp">Categoria <span class="req">*</span></label>
         <select name="categoria" class="form-select jp-select" required>
           <option value="">Selecione...</option>
@@ -49,11 +52,22 @@
         </select>
       </div>
 
-      <div class="col-md-3">
-        <label class="form-label-jp">Preço (R$) <span class="req">*</span></label>
+      <div class="col-md-4">
+        <label class="form-label-jp">Preço de Venda (R$) <span class="req">*</span></label>
         <input type="number" name="preco" class="form-control jp-input"
                value="{{ '%.2f'|format(produto.preco) if produto else form.get('preco','') }}"
                placeholder="0,00" step="0.01" min="0" required>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label-jp">
+          <i class="bi bi-lock-fill" style="color:#6a0dad;font-size:11px;"></i>
+          Preço de Compra (R$)
+        </label>
+        <input type="number" name="preco_compra" id="inputPrecoCompra" class="form-control jp-input"
+               value="{{ '%.2f'|format(produto.preco_compra) if produto and produto.preco_compra else form.get('preco_compra','') }}"
+               placeholder="0,00" step="0.01" min="0">
+        <div id="lucroInfo" class="mt-1" style="font-size:12px;color:#6a0dad;display:none;"></div>
       </div>
 
       <div class="col-md-3">
@@ -96,4 +110,112 @@
   </form>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Foco automático no campo código ──────────────────────────────────────
+document.getElementById('inputCodigo').focus();
+
+// ── Submit via AJAX (apenas no cadastro, não na edição) ──────────────────
+{% if not produto %}
+document.getElementById('formProduto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('[type=submit]');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+
+  const res  = await fetch(form.action, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    body: new FormData(form),
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-lg"></i> Cadastrar Produto';
+
+  const alertaTop = document.getElementById('alertaTopoForm');
+  if (data.ok) {
+    alertaTop.innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${data.msg} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    form.reset();
+    document.getElementById('codigoAlerta').classList.add('d-none');
+    document.getElementById('lucroInfo').style.display = 'none';
+    document.getElementById('inputCodigo').focus();
+  } else {
+    alertaTop.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${data.msg} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+  }
+  setTimeout(() => { alertaTop.innerHTML = ''; }, 4000);
+});
+{% endif %}
+
+// ── Cálculo de lucro em tempo real ────────────────────────────────────────
+const inputPreco       = document.querySelector('input[name="preco"]');
+const inputPrecoCompra = document.getElementById('inputPrecoCompra');
+const lucroInfo        = document.getElementById('lucroInfo');
+
+function calcularLucro() {
+  const venda  = parseFloat(inputPreco.value) || 0;
+  const compra = parseFloat(inputPrecoCompra.value) || 0;
+  if (venda > 0 && compra > 0) {
+    const lucro   = venda - compra;
+    const margem  = ((lucro / venda) * 100).toFixed(1);
+    const cor     = lucro >= 0 ? '#6a0dad' : '#e91e8c';
+    lucroInfo.style.display = 'block';
+    lucroInfo.innerHTML = `Lucro: <strong style="color:${cor}">R$ ${lucro.toFixed(2).replace('.',',')} (${margem}%)</strong>`;
+  } else {
+    lucroInfo.style.display = 'none';
+  }
+}
+inputPreco.addEventListener('input', calcularLucro);
+inputPrecoCompra.addEventListener('input', calcularLucro);
+calcularLucro();
+
+// ── Verificação de código duplicado ───────────────────────────────────────
+const inputCodigo = document.getElementById('inputCodigo');
+const alerta      = document.getElementById('codigoAlerta');
+const excluirId   = {{ produto.id if produto else 'null' }};
+
+let timer;
+let produtoExistenteId = null;
+
+inputCodigo.addEventListener('input', () => {
+  clearTimeout(timer);
+  produtoExistenteId = null;
+  const codigo = inputCodigo.value.trim();
+  if (codigo.length < 1) { alerta.classList.add('d-none'); return; }
+  timer = setTimeout(() => checarCodigo(codigo), 400);
+});
+
+inputCodigo.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && produtoExistenteId) {
+    e.preventDefault();
+    window.location.href = `/produtos/${produtoExistenteId}/editar`;
+  }
+});
+
+async function checarCodigo(codigo) {
+  const url = `/api/produtos/checar-codigo?codigo=${encodeURIComponent(codigo)}${excluirId ? '&excluir_id=' + excluirId : ''}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.existe) {
+    produtoExistenteId = data.id;
+    const status = data.ativo ? 'ativo' : 'inativo';
+    alerta.innerHTML = `
+      <div style="background:#fce4f3;border:1.5px solid #e91e8c;border-radius:8px;padding:8px 12px;font-size:13px;">
+        <i class="bi bi-exclamation-circle" style="color:#e91e8c;"></i>
+        <strong style="color:#e91e8c;">Produto já cadastrado!</strong><br>
+        <span style="color:#1e0638;">${data.nome}</span>
+        <span style="color:#888;"> (${status})</span>
+        &nbsp;·&nbsp;
+        <span style="color:#6a0dad;font-size:11px;"><i class="bi bi-keyboard"></i> Pressione Enter para editar</span>
+      </div>`;
+    alerta.classList.remove('d-none');
+  } else {
+    produtoExistenteId = null;
+    alerta.classList.add('d-none');
+  }
+}
+</script>
 {% endblock %}

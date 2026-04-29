@@ -199,8 +199,11 @@ a { text-decoration: none; color: inherit; }
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #ede8f7;
+}
+.card-panel > .panel-header:first-child {
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .panel-header {
