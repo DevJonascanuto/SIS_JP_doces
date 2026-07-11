@@ -55,6 +55,7 @@
           <th>Itens</th>
           <th>Total</th>
           <th>Status</th>
+          <th>Pagto</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -67,6 +68,7 @@
           <td><span class="badge-count-sm">{{ p.itens|length }}</span></td>
           <td><span class="price-tag">R$ {{ '%.2f'|format(p.total) }}</span></td>
           <td><span class="status-badge status-{{ p.status }}">{{ p.status|capitalize }}</span></td>
+          <td><span class="status-badge {% if p.pago %}status-pago{% else %}status-nao-pago{% endif %}">{% if p.pago %}Pago{% else %}Não Pago{% endif %}</span></td>
           <td>
             <a href="{{ url_for('pedido_detalhe', id=p.id) }}" class="btn-icon" title="Ver detalhes">
               <i class="bi bi-eye"></i>

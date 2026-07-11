@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{% if boleto %}Editar Boleto{% else %}Novo Boleto{% endif %}{% endblock %}
+{% block page_title %}{% if boleto %}Editar Boleto{% else %}Novo Boleto{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 animate-fade">
+  <a href="{{ url_for('boletos_lista') }}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Voltar
+  </a>
+</div>
+
+<div class="card-panel animate-fade" style="--delay:.05s; max-width:600px;">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="bi bi-receipt-cutoff"></i>
+      {% if boleto %}Editar Boleto{% else %}Cadastrar Boleto{% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('boleto_editar', id=boleto.id) if boleto else url_for('boleto_novo') }}">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <label class="form-label-jp">Valor (R$) <span class="req">*</span></label>
+        <input type="number" name="valor" class="form-control jp-input"
+               value="{{ '%.2f'|format(boleto.valor) if boleto else form.get('valor','') }}"
+               placeholder="0,00" step="0.01" min="0.01" required>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label-jp">Vencimento <span class="req">*</span></label>
+        <input type="date" name="data_vencimento" class="form-control jp-input"
+               value="{{ boleto.data_vencimento.strftime('%Y-%m-%d') if boleto else form.get('data_vencimento','') }}"
+               required>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label-jp">Observações</label>
+        <textarea name="observacoes" class="form-control jp-input" rows="3"
+                  placeholder="Informações adicionais...">{{ boleto.observacoes if boleto else form.get('observacoes','') }}</textarea>
+      </div>
+
+      <div class="col-12 d-flex gap-2 mt-2">
+        <button type="submit" class="btn-primary-jp">
+          <i class="bi bi-check-lg"></i> {% if boleto %}Salvar Alterações{% else %}Cadastrar Boleto{% endif %}
+        </button>
+        <a href="{{ url_for('boletos_lista') }}" class="btn-outline-jp">Cancelar</a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+{% endblock %}

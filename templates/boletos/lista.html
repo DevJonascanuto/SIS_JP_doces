@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Boletos{% endblock %}
+{% block page_title %}Controle de Boletos{% endblock %}
+
+{% block content %}
+
+<div class="page-actions mb-4 animate-fade">
+  <a href="{{ url_for('boleto_novo') }}" class="btn-primary-jp">
+    <i class="bi bi-plus-lg"></i> Novo Boleto
+  </a>
+</div>
+
+<!-- Resumo -->
+<div class="row g-3 mb-4 animate-fade" style="--delay:.05s">
+  <div class="col-md-4">
+    <div class="card-panel text-center py-3">
+      <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px;">Total a Pagar</div>
+      <div style="font-size:22px;font-weight:700;color:#e91e8c;">R$ {{ '%.2f'|format(total_pendente) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card-panel mb-4 animate-fade" style="--delay:.08s">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label-jp">Fornecedor</label>
+      <div class="input-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="form-control jp-input" value="{{ q }}" placeholder="Nome do fornecedor...">
+      </div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label-jp">Status</label>
+      <select name="status" class="form-select jp-select">
+        <option value="">Todos</option>
+        <option value="pendente" {% if status=='pendente' %}selected{% endif %}>Pendente</option>
+        <option value="vencido"  {% if status=='vencido'  %}selected{% endif %}>Vencido</option>
+        <option value="pago"     {% if status=='pago'     %}selected{% endif %}>Pago</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn-primary-jp w-100"><i class="bi bi-search"></i> Filtrar</button>
+      <a href="{{ url_for('boletos_lista') }}" class="btn-outline-jp"><i class="bi bi-x"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Tabela -->
+<div class="card-panel animate-fade" style="--delay:.1s">
+  <div class="panel-header">
+    <div class="panel-title"><i class="bi bi-receipt-cutoff"></i> Boletos</div>
+    <span class="badge-count">{{ boletos.total }} boleto(s)</span>
+  </div>
+
+  {% if boletos.items %}
+  <div class="table-responsive">
+    <table class="table table-hover jp-table">
+      <thead>
+        <tr>
+          <th>Valor</th>
+          <th>Vencimento</th>
+          <th>Pagamento</th>
+          <th>Status</th>
+          <th>Comprovante</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in boletos.items %}
+        {% set vencido = b.status == 'pendente' and b.data_vencimento < hoje %}
+        <tr {% if vencido %}style="background:#fff5f5;"{% endif %}>
+          <td><span class="price-tag">R$ {{ '%.2f'|format(b.valor) }}</span></td>
+          <td>
+            {{ b.data_vencimento.strftime('%d/%m/%Y') }}
+            {% if vencido %}<i class="bi bi-exclamation-triangle-fill text-danger ms-1" title="Vencido"></i>{% endif %}
+          </td>
+          <td>{{ b.data_pagamento.strftime('%d/%m/%Y') if b.data_pagamento else '-' }}</td>
+          <td>
+            {% if b.status == 'pago' %}
+              <span class="status-badge status-pago">Pago</span>
+            {% elif vencido %}
+              <span class="status-badge status-cancelado">Vencido</span>
+            {% else %}
+              <span class="status-badge status-pendente">Pendente</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if b.comprovante %}
+              <a href="{{ url_for('boleto_comprovante', id=b.id) }}" class="btn-icon" title="Ver comprovante" target="_blank">
+                <i class="bi bi-file-earmark-check"></i>
+              </a>
+            {% else %}
+              <span class="text-muted" style="font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if b.status == 'pendente' %}
+            <button type="button" class="btn-icon btn-icon-green" title="Registrar pagamento"
+                    data-bs-toggle="modal" data-bs-target="#modalPagar{{ b.id }}">
+              <i class="bi bi-check-circle"></i>
+            </button>
+            {% endif %}
+            <a href="{{ url_for('boleto_editar', id=b.id) }}" class="btn-icon" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post" action="{{ url_for('boleto_excluir', id=b.id) }}" class="d-inline"
+                  onsubmit="return confirm('Excluir este boleto?')">
+              <button type="submit" class="btn-icon btn-icon-danger" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if boletos.pages > 1 %}
+  <div class="jp-pagination">
+    {% if boletos.has_prev %}
+    <a href="{{ url_for('boletos_lista', page=boletos.prev_num, q=q, status=status) }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% endif %}
+    {% for n in boletos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if n %}
+      <a href="{{ url_for('boletos_lista', page=n, q=q, status=status) }}" class="page-btn {% if n == boletos.page %}active{% endif %}">{{ n }}</a>
+      {% else %}<span class="page-dots">…</span>{% endif %}
+    {% endfor %}
+    {% if boletos.has_next %}
+    <a href="{{ url_for('boletos_lista', page=boletos.next_num, q=q, status=status) }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-receipt-cutoff"></i>
+    <p>Nenhum boleto encontrado.</p>
+    <a href="{{ url_for('boleto_novo') }}" class="btn-primary-jp">Cadastrar boleto</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modais de pagamento -->
+{% for b in boletos.items %}
+{% if b.status == 'pendente' %}
+<div class="modal fade" id="modalPagar{{ b.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;box-shadow:0 8px 40px rgba(106,13,173,.15);">
+      <div class="modal-header" style="border-bottom:1px solid #ede8f7;">
+        <h5 class="modal-title" style="font-weight:700;color:#1e0638;">
+          <i class="bi bi-cash-coin" style="color:#6a0dad;"></i> Registrar Pagamento
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('boleto_pagar', id=b.id) }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p style="color:#555;font-size:14px;">Boleto de <strong>R$ {{ '%.2f'|format(b.valor) }}</strong> — venc. {{ b.data_vencimento.strftime('%d/%m/%Y') }}</p>
+          <div class="mb-3">
+            <label class="form-label-jp">Data do Pagamento</label>
+            <input type="date" name="data_pagamento" class="form-control jp-input"
+                   value="{{ hoje.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label-jp">Comprovante <span style="color:#888;font-size:11px;">(PDF, PNG ou JPG — opcional)</span></label>
+            <input type="file" name="comprovante" class="form-control jp-input" accept=".pdf,.png,.jpg,.jpeg">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid #ede8f7;">
+          <button type="button" class="btn-outline-jp" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn-primary-jp"><i class="bi bi-check-lg"></i> Confirmar Pagamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}

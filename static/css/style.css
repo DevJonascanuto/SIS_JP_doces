@@ -347,6 +347,8 @@ a { text-decoration: none; color: inherit; }
 .status-confirmado { background:#d1fae5; color:#059669; border:1px solid #6ee7b7; }
 .status-entregue   { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
 .status-cancelado  { background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; }
+.status-pago       { background:#d1fae5; color:#059669; border:1px solid #6ee7b7; }
+.status-nao-pago   { background:#f3f4f6; color:#6b7280; border:1px solid #d1d5db; }
 
 /* Categorias */
 .cat-badge {
@@ -449,6 +451,7 @@ a { text-decoration: none; color: inherit; }
 .btn-icon:hover { background: var(--purple-2); color: #fff; }
 .btn-icon-pink:hover { background: var(--pink); color: #fff; }
 .btn-icon-danger:hover { background: #dc2626; color: #fff; }
+.btn-icon-green:hover  { background: #059669; color: #fff; }
 
 .btn-link-sm {
   font-size: 12px; font-weight: 600; color: var(--purple-2);
@@ -493,6 +496,35 @@ a { text-decoration: none; color: inherit; }
 .ac-main { font-size: 13px; font-weight: 600; color: #1e0638; }
 .ac-sub  { font-size: 11px; color: #888; }
 .ac-price { font-weight: 700; color: var(--purple-2); font-size: 13px; margin-left: auto; white-space: nowrap; }
+
+.panel-header-wrap {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-inline-action {
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.inline-warning {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1.5px solid #e91e8c;
+  border-radius: 8px;
+  background: #fce4f3;
+  color: #1e0638;
+  font-size: 13px;
+}
+
+.inline-warning i {
+  color: #e91e8c;
+  font-size: 16px;
+  margin-top: 1px;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CARRINHO / PEDIDO

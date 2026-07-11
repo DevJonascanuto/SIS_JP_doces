@@ -72,6 +72,7 @@ class Pedido(db.Model):
     cliente_id  = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     data        = db.Column(db.DateTime, default=datetime.utcnow)
     status      = db.Column(db.String(20), default='pendente')   # pendente | confirmado | entregue | cancelado
+    pago        = db.Column(db.Boolean, default=False)
     total       = db.Column(db.Numeric(10, 2), default=0)
     desconto    = db.Column(db.Numeric(10, 2), default=0)
     observacoes = db.Column(db.Text)
@@ -86,6 +87,26 @@ class Pedido(db.Model):
 
     def __repr__(self):
         return f'<Pedido {self.numero}>'
+
+
+class Boleto(db.Model):
+    __tablename__ = 'boletos'
+    id              = db.Column(db.Integer, primary_key=True)
+    valor           = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    data_vencimento = db.Column(db.Date, nullable=False)
+    data_pagamento  = db.Column(db.Date, nullable=True)
+    status          = db.Column(db.String(20), default='pendente')  # pendente | pago
+    comprovante     = db.Column(db.String(255), nullable=True)
+    observacoes     = db.Column(db.Text)
+    criado_em       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def vencido(self):
+        from datetime import date
+        return self.status == 'pendente' and self.data_vencimento < date.today()
+
+    def __repr__(self):
+        return f'<Boleto R${self.valor} venc={self.data_vencimento}>'
 
 
 class ItemPedido(db.Model):

@@ -58,6 +58,14 @@
       </a>
     </li>
 
+    <li class="nav-section">FINANCEIRO</li>
+    <li>
+      <a href="{{ url_for('boletos_lista') }}" class="nav-link {% if 'boleto' in request.endpoint %}active{% endif %}">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>Boletos</span>
+      </a>
+    </li>
+
     <li class="nav-section">CADASTROS</li>
     <li>
       <a href="{{ url_for('produtos_lista') }}" class="nav-link {% if 'produto' in request.endpoint %}active{% endif %}">

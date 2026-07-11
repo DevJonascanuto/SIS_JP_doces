@@ -11,11 +11,7 @@
 </div>
 
 <div class="row g-4">
-
-  <!-- ── Painel esquerdo ─────────────────────────────────────────────────── -->
   <div class="col-lg-7">
-
-    <!-- Cliente -->
     <div class="card-panel animate-fade" style="--delay:.05s; position:relative; z-index:10;">
       <div class="panel-header">
         <div class="panel-title"><i class="bi bi-person"></i> Cliente</div>
@@ -41,21 +37,23 @@
       <input type="hidden" id="clienteId">
     </div>
 
-    <!-- Busca de produto -->
     <div class="card-panel mt-4 animate-fade" style="--delay:.1s">
-      <div class="panel-header">
+      <div class="panel-header panel-header-wrap">
         <div class="panel-title"><i class="bi bi-plus-circle"></i> Adicionar Produto</div>
+        <button type="button" class="btn-outline-jp btn-inline-action" data-bs-toggle="modal" data-bs-target="#modalProdutoRapido">
+          <i class="bi bi-box-seam"></i> Cadastrar na hora
+        </button>
       </div>
+
       <div class="position-relative">
         <div class="input-search-wrap">
           <i class="bi bi-search"></i>
           <input type="text" id="produtoBusca" class="form-control jp-input"
-                 placeholder="Digite o nome ou código do produto..." autocomplete="off">
+                 placeholder="Digite o nome ou codigo do produto..." autocomplete="off">
         </div>
         <div id="produtoDropdown" class="autocomplete-dropdown d-none"></div>
       </div>
 
-      <!-- Produto selecionado para adicionar -->
       <div id="produtoPreview" class="produto-preview d-none mt-3">
         <div class="pp-info">
           <span class="pp-codigo" id="ppCodigo"></span>
@@ -69,7 +67,7 @@
             <button type="button" class="qty-btn" id="qtyPlus"><i class="bi bi-plus"></i></button>
           </div>
           <div class="pp-price">
-            <label style="font-size:11px;color:#888;margin-bottom:2px;display:block;">Preço unitário (R$)</label>
+            <label style="font-size:11px;color:#888;margin-bottom:2px;display:block;">Preco unitario (R$)</label>
             <div style="display:flex;align-items:center;gap:4px;">
               <input type="number" id="ppPrecoInput" class="qty-input" style="width:90px;" min="0" step="0.01">
               <small id="ppUnidade" class="text-muted"></small>
@@ -84,10 +82,8 @@
       <input type="hidden" id="produtoSelecionadoId">
       <input type="hidden" id="produtoSelecionadoPreco">
     </div>
-
   </div>
 
-  <!-- ── Painel direito - Carrinho ──────────────────────────────────────── -->
   <div class="col-lg-5">
     <div class="card-panel animate-fade sticky-panel" style="--delay:.15s">
       <div class="panel-header">
@@ -102,7 +98,6 @@
 
       <div id="carrinhoItens" class="carrinho-list d-none"></div>
 
-      <!-- Totais -->
       <div id="carrinhoTotais" class="carrinho-totais d-none">
         <div class="total-row">
           <span>Subtotal:</span>
@@ -118,31 +113,98 @@
         </div>
       </div>
 
-      <!-- Observações -->
       <div id="obsSection" class="d-none mt-3">
-        <label class="form-label-jp">Observações do Pedido</label>
+        <label class="form-label-jp">Observacoes do Pedido</label>
         <textarea id="obsInput" class="form-control jp-input" rows="2"
-                  placeholder="Informações adicionais..."></textarea>
+                  placeholder="Informacoes adicionais..."></textarea>
       </div>
 
-      <!-- Botão finalizar -->
       <div class="mt-3">
         <button type="button" id="btnFinalizar" class="btn-primary-jp w-100 btn-lg-jp" disabled>
           <i class="bi bi-check-circle"></i> Finalizar Pedido
         </button>
       </div>
-
     </div>
   </div>
-
 </div>
 
-<!-- Modal de confirmação / sucesso -->
+<div class="modal fade" id="modalProdutoRapido" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content jp-modal">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title mb-1">Cadastrar produto sem sair do pedido</h5>
+          <p class="text-muted mb-0 small">O pedido continua em andamento enquanto o produto e incluido.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div id="alertaProdutoRapido" class="mb-3"></div>
+        <form id="formProdutoRapido">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label-jp">Codigo <span class="req">*</span></label>
+              <input type="text" name="codigo" id="produtoRapidoCodigo" class="form-control jp-input" maxlength="20" autocomplete="off" required>
+              <div id="produtoRapidoCodigoAlerta" class="mt-2 d-none"></div>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label-jp">Nome do Produto <span class="req">*</span></label>
+              <input type="text" name="nome" class="form-control jp-input" maxlength="120" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label-jp">Categoria <span class="req">*</span></label>
+              <select name="categoria" class="form-select jp-select" required>
+                <option value="">Selecione...</option>
+                {% for cat in categorias %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label-jp">Preco de Venda (R$) <span class="req">*</span></label>
+              <input type="number" name="preco" class="form-control jp-input" min="0" step="0.01" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label-jp">Preco de Compra (R$)</label>
+              <input type="number" name="preco_compra" class="form-control jp-input" min="0" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label-jp">Unidade</label>
+              <select name="unidade" class="form-select jp-select">
+                {% for un in unidades_produto %}
+                <option value="{{ un }}" {% if un == 'UN' %}selected{% endif %}>{{ un }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label-jp">Descricao / Observacoes</label>
+              <textarea name="descricao" class="form-control jp-input" rows="3" placeholder="Descricao adicional do produto..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-footer mt-4">
+            <button type="submit" class="btn-primary-jp" id="btnSalvarProdutoRapido">
+              <i class="bi bi-check-lg"></i> Salvar produto
+            </button>
+            <button type="button" class="btn-outline-jp" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="modalSucesso" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content jp-modal">
       <div class="modal-body text-center py-5">
-        <div class="success-icon">🎉</div>
+        <div class="success-icon">Pedido OK</div>
         <h4 class="mt-3">Pedido Criado!</h4>
         <p class="text-muted" id="modalMsg"></p>
         <div class="d-flex gap-3 justify-content-center mt-4">
@@ -162,33 +224,51 @@
 
 {% block scripts %}
 <script>
-// ── Estado do carrinho ────────────────────────────────────────────────────
 const state = {
   clienteId: null,
-  itens: [],   // {produto_id, codigo, nome, categoria, unidade, preco_unitario, quantidade, subtotal}
+  itens: [],
 };
 
-// ── Autocomplete de cliente ───────────────────────────────────────────────
-const clienteBusca    = document.getElementById('clienteBusca');
+const clienteBusca = document.getElementById('clienteBusca');
 const clienteDropdown = document.getElementById('clienteDropdown');
-const clienteId       = document.getElementById('clienteId');
+const clienteId = document.getElementById('clienteId');
+const produtoBusca = document.getElementById('produtoBusca');
+const produtoDropdown = document.getElementById('produtoDropdown');
+const modalProdutoRapidoEl = document.getElementById('modalProdutoRapido');
+const modalProdutoRapido = new bootstrap.Modal(modalProdutoRapidoEl);
+const formProdutoRapido = document.getElementById('formProdutoRapido');
+const alertaProdutoRapido = document.getElementById('alertaProdutoRapido');
+const produtoRapidoCodigo = document.getElementById('produtoRapidoCodigo');
+const produtoRapidoCodigoAlerta = document.getElementById('produtoRapidoCodigoAlerta');
 
 let clienteTimer;
+let produtoTimer;
+let produtoRapidoCodigoTimer;
+let produtoRapidoExistenteId = null;
+
 clienteBusca.addEventListener('input', () => {
   clearTimeout(clienteTimer);
   const q = clienteBusca.value.trim();
-  if (q.length < 1) { clienteDropdown.classList.add('d-none'); return; }
+  if (q.length < 1) {
+    clienteDropdown.classList.add('d-none');
+    return;
+  }
   clienteTimer = setTimeout(() => fetchClientes(q), 250);
 });
 
 async function fetchClientes(q) {
-  const res  = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(q)}`);
+  const res = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(q)}`);
   const data = await res.json();
   renderClienteDropdown(data);
 }
 
 function renderClienteDropdown(data) {
-  if (!data.length) { clienteDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum cliente encontrado</div>'; clienteDropdown.classList.remove('d-none'); return; }
+  if (!data.length) {
+    clienteDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum cliente encontrado</div>';
+    clienteDropdown.classList.remove('d-none');
+    return;
+  }
+
   clienteDropdown.innerHTML = data.map(c => `
     <div class="ac-item" data-id="${c.id}" data-nome="${c.nome}" data-tel="${c.telefone}" data-cidade="${c.cidade}" data-uf="${c.estado}">
       <div class="ac-icon-wrap"><i class="bi bi-person"></i></div>
@@ -198,6 +278,7 @@ function renderClienteDropdown(data) {
       </div>
     </div>
   `).join('');
+
   clienteDropdown.classList.remove('d-none');
   clienteDropdown.querySelectorAll('.ac-item[data-id]').forEach(el => {
     el.addEventListener('click', () => selecionarCliente(el));
@@ -208,8 +289,8 @@ function selecionarCliente(el) {
   state.clienteId = el.dataset.id;
   clienteId.value = el.dataset.id;
   document.getElementById('cscAvatar').textContent = el.dataset.nome[0];
-  document.getElementById('cscNome').textContent   = el.dataset.nome;
-  document.getElementById('cscSub').textContent    = [el.dataset.tel, el.dataset.cidade, el.dataset.uf].filter(Boolean).join(' · ');
+  document.getElementById('cscNome').textContent = el.dataset.nome;
+  document.getElementById('cscSub').textContent = [el.dataset.tel, el.dataset.cidade, el.dataset.uf].filter(Boolean).join(' · ');
   document.getElementById('clienteSelecionado').classList.remove('d-none');
   clienteBusca.value = '';
   clienteDropdown.classList.add('d-none');
@@ -223,34 +304,31 @@ document.getElementById('cscRemove').addEventListener('click', () => {
   checkFinalizar();
 });
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('#clienteBusca') && !e.target.closest('#clienteDropdown'))
-    clienteDropdown.classList.add('d-none');
-});
-
-// ── Autocomplete de produto ───────────────────────────────────────────────
-const produtoBusca    = document.getElementById('produtoBusca');
-const produtoDropdown = document.getElementById('produtoDropdown');
-let produtoTimer;
-
 produtoBusca.addEventListener('input', () => {
   clearTimeout(produtoTimer);
   const q = produtoBusca.value.trim();
-  if (q.length < 1) { produtoDropdown.classList.add('d-none'); return; }
+  if (q.length < 1) {
+    produtoDropdown.classList.add('d-none');
+    return;
+  }
   produtoTimer = setTimeout(() => fetchProdutos(q), 250);
 });
 
 async function fetchProdutos(q) {
-  const res  = await fetch(`/api/produtos/buscar?q=${encodeURIComponent(q)}`);
+  const res = await fetch(`/api/produtos/buscar?q=${encodeURIComponent(q)}`);
   const data = await res.json();
   renderProdutoDropdown(data);
 }
 
 function renderProdutoDropdown(data) {
-  if (!data.length) { produtoDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum produto encontrado</div>'; produtoDropdown.classList.remove('d-none'); return; }
+  if (!data.length) {
+    produtoDropdown.innerHTML = '<div class="ac-item ac-empty">Nenhum produto encontrado</div>';
+    produtoDropdown.classList.remove('d-none');
+    return;
+  }
+
   produtoDropdown.innerHTML = data.map(p => `
-    <div class="ac-item" data-id="${p.id}" data-codigo="${p.codigo}" data-nome="${p.nome}"
-         data-cat="${p.categoria}" data-preco="${p.preco}" data-unidade="${p.unidade}">
+    <div class="ac-item" data-id="${p.id}" data-codigo="${p.codigo}" data-nome="${p.nome}" data-cat="${p.categoria}" data-preco="${p.preco}" data-unidade="${p.unidade}">
       <div class="ac-icon-wrap ac-icon-product"><span class="ac-code">${p.codigo}</span></div>
       <div style="flex:1">
         <div class="ac-main">${p.nome}</div>
@@ -259,6 +337,7 @@ function renderProdutoDropdown(data) {
       <div class="ac-price">R$ ${fmtBR(p.preco)}</div>
     </div>
   `).join('');
+
   produtoDropdown.classList.remove('d-none');
   produtoDropdown.querySelectorAll('.ac-item[data-id]').forEach(el => {
     el.addEventListener('click', () => selecionarProduto(el));
@@ -266,12 +345,12 @@ function renderProdutoDropdown(data) {
 }
 
 function selecionarProduto(el) {
-  document.getElementById('produtoSelecionadoId').value    = el.dataset.id;
+  document.getElementById('produtoSelecionadoId').value = el.dataset.id;
   document.getElementById('produtoSelecionadoPreco').value = el.dataset.preco;
   document.getElementById('ppCodigo').textContent = el.dataset.codigo;
-  document.getElementById('ppNome').textContent   = el.dataset.nome;
-  document.getElementById('ppCat').textContent    = el.dataset.cat;
-  document.getElementById('ppPrecoInput').value   = parseFloat(el.dataset.preco).toFixed(2);
+  document.getElementById('ppNome').textContent = el.dataset.nome;
+  document.getElementById('ppCat').textContent = el.dataset.cat;
+  document.getElementById('ppPrecoInput').value = parseFloat(el.dataset.preco).toFixed(2);
   document.getElementById('ppUnidade').textContent = '/ ' + el.dataset.unidade;
   document.getElementById('qtyInput').value = 1;
   document.getElementById('produtoPreview').classList.remove('d-none');
@@ -279,40 +358,148 @@ function selecionarProduto(el) {
   produtoDropdown.classList.add('d-none');
 }
 
+function selecionarProdutoPorDados(produto) {
+  selecionarProduto({
+    dataset: {
+      id: produto.id,
+      codigo: produto.codigo,
+      nome: produto.nome,
+      cat: produto.categoria,
+      preco: produto.preco,
+      unidade: produto.unidade,
+    }
+  });
+}
+
 document.addEventListener('click', e => {
-  if (!e.target.closest('#produtoBusca') && !e.target.closest('#produtoDropdown'))
+  if (!e.target.closest('#clienteBusca') && !e.target.closest('#clienteDropdown')) {
+    clienteDropdown.classList.add('d-none');
+  }
+  if (!e.target.closest('#produtoBusca') && !e.target.closest('#produtoDropdown')) {
     produtoDropdown.classList.add('d-none');
+  }
 });
 
-// ── Controles de quantidade ───────────────────────────────────────────────
+modalProdutoRapidoEl.addEventListener('shown.bs.modal', () => {
+  produtoRapidoCodigo.focus();
+});
+
+modalProdutoRapidoEl.addEventListener('hidden.bs.modal', () => {
+  formProdutoRapido.reset();
+  alertaProdutoRapido.innerHTML = '';
+  produtoRapidoCodigoAlerta.classList.add('d-none');
+  produtoRapidoExistenteId = null;
+});
+
+produtoRapidoCodigo.addEventListener('input', () => {
+  clearTimeout(produtoRapidoCodigoTimer);
+  produtoRapidoExistenteId = null;
+  const codigo = produtoRapidoCodigo.value.trim();
+  if (codigo.length < 1) {
+    produtoRapidoCodigoAlerta.classList.add('d-none');
+    return;
+  }
+  produtoRapidoCodigoTimer = setTimeout(() => checarCodigoProdutoRapido(codigo), 400);
+});
+
+produtoRapidoCodigo.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && produtoRapidoExistenteId) {
+    e.preventDefault();
+    window.open(`/produtos/${produtoRapidoExistenteId}/editar`, '_blank');
+  }
+});
+
+async function checarCodigoProdutoRapido(codigo) {
+  const res = await fetch(`/api/produtos/checar-codigo?codigo=${encodeURIComponent(codigo)}`);
+  const data = await res.json();
+  if (data.existe) {
+    produtoRapidoExistenteId = data.id;
+    const status = data.ativo ? 'ativo' : 'inativo';
+    produtoRapidoCodigoAlerta.innerHTML = `
+      <div class="inline-warning">
+        <i class="bi bi-exclamation-circle"></i>
+        <div>
+          <strong>Produto ja cadastrado.</strong><br>
+          <span>${data.nome} (${status})</span><br>
+          <small>Pressione Enter para abrir a edicao em outra aba.</small>
+        </div>
+      </div>
+    `;
+    produtoRapidoCodigoAlerta.classList.remove('d-none');
+  } else {
+    produtoRapidoExistenteId = null;
+    produtoRapidoCodigoAlerta.classList.add('d-none');
+  }
+}
+
+formProdutoRapido.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarProdutoRapido');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+
+  try {
+    const res = await fetch('/produtos/novo', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(formProdutoRapido),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      selecionarProdutoPorDados(data.produto);
+      modalProdutoRapido.hide();
+      animatePulse(document.getElementById('produtoPreview'));
+    } else {
+      alertaProdutoRapido.innerHTML = `<div class="alert alert-danger" role="alert">${data.msg}</div>`;
+    }
+  } catch (err) {
+    alertaProdutoRapido.innerHTML = '<div class="alert alert-danger" role="alert">Nao foi possivel cadastrar o produto agora.</div>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-lg"></i> Salvar produto';
+});
+
 document.getElementById('qtyMinus').addEventListener('click', () => {
   const inp = document.getElementById('qtyInput');
-  if (parseInt(inp.value) > 1) inp.value = parseInt(inp.value) - 1;
-});
-document.getElementById('qtyPlus').addEventListener('click', () => {
-  const inp = document.getElementById('qtyInput');
-  inp.value = parseInt(inp.value) + 1;
+  if (parseInt(inp.value, 10) > 1) {
+    inp.value = parseInt(inp.value, 10) - 1;
+  }
 });
 
-// ── Adicionar item ao carrinho ────────────────────────────────────────────
+document.getElementById('qtyPlus').addEventListener('click', () => {
+  const inp = document.getElementById('qtyInput');
+  inp.value = parseInt(inp.value, 10) + 1;
+});
+
 document.getElementById('btnAddItem').addEventListener('click', () => {
-  const prodId  = document.getElementById('produtoSelecionadoId').value;
-  const preco   = parseFloat(document.getElementById('ppPrecoInput').value) || 0;
-  const qty     = parseFloat(document.getElementById('qtyInput').value);
-  const codigo  = document.getElementById('ppCodigo').textContent;
-  const nome    = document.getElementById('ppNome').textContent;
-  const cat     = document.getElementById('ppCat').textContent;
-  const unidade = document.getElementById('ppUnidade').textContent.replace('/ ','');
-  if (!prodId || qty <= 0) return;
+  const prodId = document.getElementById('produtoSelecionadoId').value;
+  const preco = parseFloat(document.getElementById('ppPrecoInput').value) || 0;
+  const qty = parseFloat(document.getElementById('qtyInput').value);
+  const codigo = document.getElementById('ppCodigo').textContent;
+  const nome = document.getElementById('ppNome').textContent;
+  const cat = document.getElementById('ppCat').textContent;
+  const unidade = document.getElementById('ppUnidade').textContent.replace('/ ', '');
+
+  if (!prodId || qty <= 0) {
+    return;
+  }
 
   const existente = state.itens.find(i => i.produto_id == prodId);
   if (existente) {
     existente.quantidade += qty;
+    existente.preco_unitario = preco;
     existente.subtotal = round2(existente.quantidade * existente.preco_unitario);
   } else {
     state.itens.push({
-      produto_id: prodId, codigo, nome, categoria: cat, unidade,
-      preco_unitario: preco, quantidade: qty,
+      produto_id: prodId,
+      codigo,
+      nome,
+      categoria: cat,
+      unidade,
+      preco_unitario: preco,
+      quantidade: qty,
       subtotal: round2(qty * preco),
     });
   }
@@ -324,13 +511,13 @@ document.getElementById('btnAddItem').addEventListener('click', () => {
   animatePulse(document.getElementById('itemCount'));
 });
 
-// ── Renderizar carrinho ───────────────────────────────────────────────────
 function renderCarrinho() {
-  const lista   = document.getElementById('carrinhoItens');
-  const vazio   = document.getElementById('carrinhoVazio');
-  const totais  = document.getElementById('carrinhoTotais');
+  const lista = document.getElementById('carrinhoItens');
+  const vazio = document.getElementById('carrinhoVazio');
+  const totais = document.getElementById('carrinhoTotais');
   const obsSection = document.getElementById('obsSection');
   const n = state.itens.length;
+
   document.getElementById('itemCount').textContent = n + (n === 1 ? ' item' : ' itens');
 
   if (!n) {
@@ -340,6 +527,7 @@ function renderCarrinho() {
     obsSection.classList.add('d-none');
     return;
   }
+
   vazio.style.display = 'none';
   lista.classList.remove('d-none');
   totais.classList.remove('d-none');
@@ -353,8 +541,7 @@ function renderCarrinho() {
       </div>
       <div class="ci-controls">
         <button class="qty-btn-sm" onclick="changeQty(${idx}, -1)"><i class="bi bi-dash"></i></button>
-        <input type="number" class="qty-input-sm" value="${item.quantidade}" min="0.001" step="1"
-               onchange="setQty(${idx}, this.value)">
+        <input type="number" class="qty-input-sm" value="${item.quantidade}" min="0.001" step="1" onchange="setQty(${idx}, this.value)">
         <button class="qty-btn-sm" onclick="changeQty(${idx}, 1)"><i class="bi bi-plus"></i></button>
       </div>
       <div class="ci-price">R$ ${fmtBR(item.subtotal)}</div>
@@ -368,16 +555,19 @@ function renderCarrinho() {
 function changeQty(idx, delta) {
   const item = state.itens[idx];
   item.quantidade = Math.max(0.001, item.quantidade + delta);
-  item.subtotal   = round2(item.quantidade * item.preco_unitario);
+  item.subtotal = round2(item.quantidade * item.preco_unitario);
   renderCarrinho();
 }
 
 function setQty(idx, val) {
   const item = state.itens[idx];
   const q = parseFloat(val);
-  if (!q || q <= 0) { removeItem(idx); return; }
+  if (!q || q <= 0) {
+    removeItem(idx);
+    return;
+  }
   item.quantidade = q;
-  item.subtotal   = round2(q * item.preco_unitario);
+  item.subtotal = round2(q * item.preco_unitario);
   renderCarrinho();
 }
 
@@ -392,12 +582,11 @@ function recalcTotais() {
   const desc = parseFloat(document.getElementById('descontoInput').value) || 0;
   const total = Math.max(0, subtotal - desc);
   document.getElementById('subtotalVal').textContent = 'R$ ' + fmtBR(subtotal);
-  document.getElementById('totalVal').textContent    = 'R$ ' + fmtBR(total);
+  document.getElementById('totalVal').textContent = 'R$ ' + fmtBR(total);
 }
 
 document.getElementById('descontoInput').addEventListener('input', recalcTotais);
 
-// ── Finalizar pedido ──────────────────────────────────────────────────────
 function checkFinalizar() {
   const btn = document.getElementById('btnFinalizar');
   btn.disabled = !state.clienteId || state.itens.length === 0;
@@ -409,47 +598,48 @@ document.getElementById('btnFinalizar').addEventListener('click', async () => {
   btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
 
   const payload = {
-    cliente_id:  parseInt(state.clienteId),
-    desconto:    parseFloat(document.getElementById('descontoInput').value) || 0,
+    cliente_id: parseInt(state.clienteId, 10),
+    desconto: parseFloat(document.getElementById('descontoInput').value) || 0,
     observacoes: document.getElementById('obsInput').value,
     itens: state.itens.map(i => ({
-      produto_id:     parseInt(i.produto_id),
-      quantidade:     i.quantidade,
+      produto_id: parseInt(i.produto_id, 10),
+      quantidade: i.quantidade,
       preco_unitario: i.preco_unitario,
     })),
   };
 
   try {
-    const res  = await fetch('/pedidos/novo', {
-      method:  'POST',
+    const res = await fetch('/pedidos/novo', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.ok) {
       document.getElementById('modalMsg').textContent = `Pedido ${data.numero} criado com sucesso!`;
       document.getElementById('btnVerPedido').href = `/pedidos/${data.pedido_id}`;
-      document.getElementById('btnGerarPDF').href  = `/pedidos/${data.pedido_id}/pdf`;
+      document.getElementById('btnGerarPDF').href = `/pedidos/${data.pedido_id}/pdf`;
       new bootstrap.Modal(document.getElementById('modalSucesso')).show();
       window.open(`/pedidos/${data.pedido_id}/pdf`, '_blank');
     } else {
       alert('Erro: ' + data.msg);
     }
-  } catch(e) {
-    alert('Erro de comunicação com o servidor.');
+  } catch (err) {
+    alert('Erro de comunicacao com o servidor.');
   }
 
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-check-circle"></i> Finalizar Pedido';
 });
 
-// ── Utilitários ───────────────────────────────────────────────────────────
 function fmtBR(n) {
   return parseFloat(n).toFixed(2).replace('.', ',');
 }
+
 function round2(n) {
   return Math.round(n * 100) / 100;
 }
+
 function animatePulse(el) {
   el.classList.remove('pulse-anim');
   void el.offsetWidth;

@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, abort
 from extensions import db
 from config import Config
-from models import Produto, Cliente, Pedido, ItemPedido
+from models import Produto, Cliente, Pedido, ItemPedido, Boleto
 from utils.pdf_generator import gerar_pdf_pedido
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
+from werkzeug.utils import secure_filename
 import re
 import os
+import uuid
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -59,6 +61,8 @@ CATEGORIAS = [
     'CHOCOLATE', 'SALGADINHO', 'POTE', 'DIVERSOS',
 ]
 
+UNIDADES_PRODUTO = ['UN', 'CX', 'PT', 'DP', 'PCT', 'FD', 'BD', 'CT', 'ESP', 'KG']
+
 @app.route('/produtos')
 def produtos_lista():
     q          = request.args.get('q', '').strip()
@@ -107,7 +111,18 @@ def produto_novo():
         db.session.commit()
 
         if is_ajax:
-            return jsonify({'ok': True, 'msg': f'Produto <strong>{nome}</strong> cadastrado!'})
+            return jsonify({
+                'ok': True,
+                'msg': f'Produto <strong>{nome}</strong> cadastrado!',
+                'produto': {
+                    'id': p.id,
+                    'codigo': p.codigo,
+                    'nome': p.nome,
+                    'categoria': p.categoria,
+                    'preco': float(p.preco),
+                    'unidade': p.unidade,
+                }
+            })
         flash(f'Produto <strong>{nome}</strong> cadastrado com sucesso!', 'success')
         return redirect(url_for('produto_novo'))
 
@@ -337,7 +352,12 @@ def pedido_novo():
         return jsonify({'ok': True, 'pedido_id': pedido.id, 'numero': pedido.numero})
 
     clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-    return render_template('pedidos/novo.html', clientes=clientes)
+    return render_template(
+        'pedidos/novo.html',
+        clientes=clientes,
+        categorias=CATEGORIAS,
+        unidades_produto=UNIDADES_PRODUTO,
+    )
 
 
 @app.route('/pedidos/<int:id>')
@@ -357,6 +377,14 @@ def pedido_status(id):
         pedido.status = novo
         db.session.commit()
         flash('Status atualizado!', 'success')
+    return redirect(url_for('pedido_detalhe', id=id))
+
+
+@app.route('/pedidos/<int:id>/pago', methods=['POST'])
+def pedido_pago(id):
+    pedido = Pedido.query.get_or_404(id)
+    pedido.pago = not pedido.pago
+    db.session.commit()
     return redirect(url_for('pedido_detalhe', id=id))
 
 
@@ -391,6 +419,116 @@ def pedido_pdf(id):
         as_attachment=False,
         download_name=nome_arquivo,
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BOLETOS
+# ══════════════════════════════════════════════════════════════════════════════
+
+EXTENSOES_COMPROVANTE = {'pdf', 'png', 'jpg', 'jpeg'}
+
+def _extensao_permitida(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in EXTENSOES_COMPROVANTE
+
+
+@app.route('/boletos')
+def boletos_lista():
+    status    = request.args.get('status', '')
+    q         = request.args.get('q', '').strip()
+    page      = request.args.get('page', 1, type=int)
+
+    query = Boleto.query
+    if status == 'vencido':
+        query = query.filter(Boleto.status == 'pendente', Boleto.data_vencimento < date.today())
+    elif status:
+        query = query.filter(Boleto.status == status)
+    if q:
+        query = query.filter(Boleto.fornecedor.ilike(f'%{q}%'))
+
+    boletos = query.order_by(Boleto.data_vencimento.asc()).paginate(page=page, per_page=20)
+    total_pendente = db.session.query(db.func.sum(Boleto.valor)).filter(Boleto.status == 'pendente').scalar() or 0
+    return render_template('boletos/lista.html', boletos=boletos, status=status, q=q,
+                           total_pendente=float(total_pendente), hoje=date.today())
+
+
+@app.route('/boletos/novo', methods=['GET', 'POST'])
+def boleto_novo():
+    if request.method == 'POST':
+        valor           = Decimal(request.form['valor'].replace(',', '.'))
+        data_vencimento = datetime.strptime(request.form['data_vencimento'], '%Y-%m-%d').date()
+        observacoes     = request.form.get('observacoes', '').strip()
+
+        b = Boleto(valor=valor, data_vencimento=data_vencimento, observacoes=observacoes)
+        db.session.add(b)
+        db.session.commit()
+        flash('Boleto cadastrado com sucesso!', 'success')
+        return redirect(url_for('boletos_lista'))
+
+    return render_template('boletos/form.html', boleto=None, form={})
+
+
+@app.route('/boletos/<int:id>/editar', methods=['GET', 'POST'])
+def boleto_editar(id):
+    b = Boleto.query.get_or_404(id)
+    if request.method == 'POST':
+        b.valor           = Decimal(request.form['valor'].replace(',', '.'))
+        b.data_vencimento = datetime.strptime(request.form['data_vencimento'], '%Y-%m-%d').date()
+        b.observacoes     = request.form.get('observacoes', '').strip()
+        db.session.commit()
+        flash('Boleto atualizado!', 'success')
+        return redirect(url_for('boletos_lista'))
+
+    return render_template('boletos/form.html', boleto=b, form={})
+
+
+@app.route('/boletos/<int:id>/pagar', methods=['POST'])
+def boleto_pagar(id):
+    b = Boleto.query.get_or_404(id)
+    data_str = request.form.get('data_pagamento', '')
+    b.data_pagamento = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else date.today()
+    b.status = 'pago'
+
+    arquivo = request.files.get('comprovante')
+    if arquivo and arquivo.filename and _extensao_permitida(arquivo.filename):
+        pasta = app.config['UPLOAD_FOLDER']
+        os.makedirs(pasta, exist_ok=True)
+        ext      = arquivo.filename.rsplit('.', 1)[1].lower()
+        filename = f'{uuid.uuid4().hex}.{ext}'
+        arquivo.save(os.path.join(pasta, filename))
+        # remove comprovante antigo se existir
+        if b.comprovante:
+            old = os.path.join(app.config['UPLOAD_FOLDER'], b.comprovante)
+            if os.path.exists(old):
+                os.remove(old)
+        b.comprovante = filename
+
+    db.session.commit()
+    flash('Boleto marcado como pago!', 'success')
+    return redirect(url_for('boletos_lista'))
+
+
+@app.route('/boletos/<int:id>/excluir', methods=['POST'])
+def boleto_excluir(id):
+    b = Boleto.query.get_or_404(id)
+    if b.comprovante:
+        caminho = os.path.join(app.config['UPLOAD_FOLDER'], b.comprovante)
+        if os.path.exists(caminho):
+            os.remove(caminho)
+    db.session.delete(b)
+    db.session.commit()
+    flash('Boleto excluído!', 'warning')
+    return redirect(url_for('boletos_lista'))
+
+
+@app.route('/boletos/<int:id>/comprovante')
+def boleto_comprovante(id):
+    b = Boleto.query.get_or_404(id)
+    if not b.comprovante:
+        abort(404)
+    caminho = os.path.join(app.config['UPLOAD_FOLDER'], b.comprovante)
+    if not os.path.exists(caminho):
+        abort(404)
+    return send_file(caminho, as_attachment=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

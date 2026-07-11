@@ -91,6 +91,25 @@
       </form>
     </div>
 
+    <!-- Pagamento -->
+    <div class="card-panel mt-4 animate-fade" style="--delay:.2s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-cash-coin"></i> Pagamento</div>
+        <span class="status-badge {% if pedido.pago %}status-pago{% else %}status-nao-pago{% endif %}">
+          {% if pedido.pago %}Pago{% else %}Não Pago{% endif %}
+        </span>
+      </div>
+      <form method="post" action="{{ url_for('pedido_pago', id=pedido.id) }}">
+        <button type="submit" class="btn-primary-jp w-100 {% if pedido.pago %}btn-outline-jp{% endif %}">
+          {% if pedido.pago %}
+            <i class="bi bi-x-circle"></i> Marcar como Não Pago
+          {% else %}
+            <i class="bi bi-check-circle"></i> Marcar como Pago
+          {% endif %}
+        </button>
+      </form>
+    </div>
+
   </div>
 
   <!-- ── Itens do pedido ─────────────────────────────────────────────────── -->
