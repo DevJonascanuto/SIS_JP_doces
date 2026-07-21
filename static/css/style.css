@@ -274,6 +274,28 @@ a { text-decoration: none; color: inherit; }
 }
 .stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 12px; opacity: .85; margin-top: 4px; font-weight: 500; }
+.stat-switcher {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+}
+.stat-switcher-btn {
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,.8);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.stat-switcher-btn.active {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+}
 
 /* Efeito decorativo no card */
 .stat-card::after {

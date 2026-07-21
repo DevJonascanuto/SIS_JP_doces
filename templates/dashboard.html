@@ -41,8 +41,18 @@
     <div class="stat-card stat-green animate-fade" style="--delay:.2s">
       <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
       <div class="stat-info">
-        <div class="stat-value">R$ {{ '%.2f'|format(receita_total) }}</div>
-        <div class="stat-label">Receita Total</div>
+        <div class="stat-switcher" role="tablist" aria-label="Modo do valor">
+          <button type="button" class="stat-switcher-btn active" data-metrica="lucro">Lucro</button>
+          <button type="button" class="stat-switcher-btn" data-metrica="receita">Total</button>
+          <button type="button" class="stat-switcher-btn" data-metrica="custo">Custo</button>
+        </div>
+        <div class="stat-value" id="valorMetricas"
+             data-lucro="{{ '%.2f'|format(lucro_total) }}"
+             data-receita="{{ '%.2f'|format(receita_total) }}"
+             data-custo="{{ '%.2f'|format(custo_total) }}">
+          R$ {{ '%.2f'|format(lucro_total) }}
+        </div>
+        <div class="stat-label" id="labelMetricas">Lucro Total</div>
       </div>
     </div>
   </div>
@@ -130,4 +140,39 @@
   {% endif %}
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const valorEl = document.getElementById('valorMetricas');
+  const labelEl = document.getElementById('labelMetricas');
+  const buttons = document.querySelectorAll('.stat-switcher-btn');
+  if (!valorEl || !labelEl || !buttons.length) return;
+
+  const labels = {
+    lucro: 'Lucro Total',
+    receita: 'Total de Vendas',
+    custo: 'Custo Total',
+  };
+
+  function formatBR(value) {
+    return Number(value).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      buttons.forEach((item) => item.classList.remove('active'));
+      button.classList.add('active');
+      const metrica = button.dataset.metrica;
+      valorEl.textContent = `R$ ${formatBR(valorEl.dataset[metrica])}`;
+      labelEl.textContent = labels[metrica];
+    });
+  });
+});
+</script>
 {% endblock %}

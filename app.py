@@ -31,13 +31,19 @@ def stats_dashboard():
     pedidos_hoje   = Pedido.query.filter(
         db.func.date(Pedido.data) == datetime.utcnow().date()
     ).count()
-    receita_total  = db.session.query(db.func.sum(Pedido.total)).scalar() or 0
+    receita_total = db.session.query(db.func.sum(Pedido.total)).scalar() or 0
+    custo_total = db.session.query(
+        db.func.sum(ItemPedido.quantidade * db.func.coalesce(Produto.preco_compra, 0))
+    ).join(Produto, Produto.id == ItemPedido.produto_id).scalar() or 0
+    lucro_total = Decimal(str(receita_total)) - Decimal(str(custo_total))
     return dict(
         total_produtos=total_produtos,
         total_clientes=total_clientes,
         total_pedidos=total_pedidos,
         pedidos_hoje=pedidos_hoje,
         receita_total=float(receita_total),
+        custo_total=float(custo_total),
+        lucro_total=float(lucro_total),
     )
 
 
