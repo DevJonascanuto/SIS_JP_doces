@@ -506,9 +506,13 @@ document.getElementById('btnAddItem').addEventListener('click', () => {
 
   document.getElementById('produtoPreview').classList.add('d-none');
   document.getElementById('produtoSelecionadoId').value = '';
+  document.getElementById('produtoSelecionadoPreco').value = '';
+  produtoBusca.value = '';
+  produtoDropdown.classList.add('d-none');
   renderCarrinho();
   checkFinalizar();
   animatePulse(document.getElementById('itemCount'));
+  produtoBusca.focus();
 });
 
 function renderCarrinho() {

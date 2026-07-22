@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
+
+{% block content %}
+
+<div class="card-panel mb-4 animate-fade" style="--delay:.05s">
+  <form method="get" class="row g-3 align-items-end" id="formRelatorios">
+    <div class="col-md-3">
+      <label class="form-label-jp">Periodo</label>
+      <select name="periodo" class="form-select jp-select" id="periodoRelatorio">
+        <option value="hoje" {% if periodo == 'hoje' %}selected{% endif %}>Hoje</option>
+        <option value="semana" {% if periodo == 'semana' %}selected{% endif %}>Semana</option>
+        <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Mes</option>
+        <option value="personalizado" {% if periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
+      </select>
+    </div>
+
+    <div class="col-md-3" id="wrapMesRef">
+      <label class="form-label-jp">Mes Fechado</label>
+      <select name="mes_ref" class="form-select jp-select">
+        {% for mes in opcoes_meses %}
+        <option value="{{ mes.valor }}" {% if mes_ref == mes.valor %}selected{% endif %}>{{ mes.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3" id="wrapDataInicio">
+      <label class="form-label-jp">Data Inicial</label>
+      <input type="date" name="data_inicio" class="form-control jp-input"
+             value="{{ data_inicio.strftime('%Y-%m-%d') if data_inicio else '' }}">
+    </div>
+
+    <div class="col-md-3" id="wrapDataFim">
+      <label class="form-label-jp">Data Final</label>
+      <input type="date" name="data_fim" class="form-control jp-input"
+             value="{{ data_fim.strftime('%Y-%m-%d') if data_fim else '' }}">
+    </div>
+
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn-primary-jp w-100">
+        <i class="bi bi-funnel"></i> Aplicar
+      </button>
+      <a href="{{ url_for('relatorios') }}" class="btn-outline-jp">
+        <i class="bi bi-arrow-clockwise"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-green animate-fade" style="--delay:.1s">
+      <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">R$ {{ '%.2f'|format(resumo.total_vendas) }}</div>
+        <div class="stat-label">Total Vendido</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-orange animate-fade" style="--delay:.15s">
+      <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">R$ {{ '%.2f'|format(resumo.custo_total) }}</div>
+        <div class="stat-label">Custo Total</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-purple animate-fade" style="--delay:.2s">
+      <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">R$ {{ '%.2f'|format(resumo.lucro_total) }}</div>
+        <div class="stat-label">Lucro Total</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-pink animate-fade" style="--delay:.25s">
+      <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ resumo.total_pedidos }}</div>
+        <div class="stat-label">Pedidos no Periodo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card-panel animate-fade" style="--delay:.3s">
+      <div class="report-mini-label">Ticket Medio</div>
+      <div class="report-mini-value">R$ {{ '%.2f'|format(resumo.ticket_medio) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-panel animate-fade" style="--delay:.35s">
+      <div class="report-mini-label">Total Recebido</div>
+      <div class="report-mini-value text-success">R$ {{ '%.2f'|format(resumo.total_recebido) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-panel animate-fade" style="--delay:.4s">
+      <div class="report-mini-label">Total a Receber</div>
+      <div class="report-mini-value text-danger">R$ {{ '%.2f'|format(resumo.total_a_receber) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card-panel animate-fade" style="--delay:.45s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-people"></i> Melhores Clientes</div>
+        <span class="badge-count">{{ top_clientes|length }} cliente(s)</span>
+      </div>
+      {% if top_clientes %}
+      <div class="table-responsive">
+        <table class="table table-hover jp-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Pedidos</th>
+              <th>Total</th>
+              <th>Recebido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cliente in top_clientes %}
+            <tr>
+              <td><strong>{{ cliente.nome }}</strong></td>
+              <td>{{ cliente.pedidos }}</td>
+              <td><span class="price-tag">R$ {{ '%.2f'|format(cliente.total) }}</span></td>
+              <td>R$ {{ '%.2f'|format(cliente.recebido) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state-sm">
+        <i class="bi bi-people"></i>
+        <p>Nenhum cliente no periodo selecionado.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card-panel animate-fade" style="--delay:.5s">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-box-seam"></i> Produtos Mais Vendidos</div>
+        <span class="badge-count">{{ top_produtos|length }} produto(s)</span>
+      </div>
+      {% if top_produtos %}
+      <div class="table-responsive">
+        <table class="table table-hover jp-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Qtde</th>
+              <th>Faturamento</th>
+              <th>Lucro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for produto in top_produtos %}
+            <tr>
+              <td>
+                <span class="code-badge">{{ produto.codigo }}</span><br>
+                <strong>{{ produto.nome }}</strong>
+              </td>
+              <td>{{ '%.3f'|format(produto.quantidade) }}</td>
+              <td><span class="price-tag">R$ {{ '%.2f'|format(produto.faturamento) }}</span></td>
+              <td>R$ {{ '%.2f'|format(produto.lucro) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state-sm">
+        <i class="bi bi-box-seam"></i>
+        <p>Nenhum produto vendido no periodo selecionado.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const periodoEl = document.getElementById('periodoRelatorio');
+  const wrapMes = document.getElementById('wrapMesRef');
+  const wrapInicio = document.getElementById('wrapDataInicio');
+  const wrapFim = document.getElementById('wrapDataFim');
+  if (!periodoEl || !wrapMes || !wrapInicio || !wrapFim) return;
+
+  function syncFiltroPeriodo() {
+    const periodo = periodoEl.value;
+    wrapMes.style.display = periodo === 'mes' ? '' : 'none';
+    wrapInicio.style.display = periodo === 'personalizado' ? '' : 'none';
+    wrapFim.style.display = periodo === 'personalizado' ? '' : 'none';
+  }
+
+  periodoEl.addEventListener('change', syncFiltroPeriodo);
+  syncFiltroPeriodo();
+});
+</script>
+{% endblock %}

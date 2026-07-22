@@ -330,6 +330,21 @@ a { text-decoration: none; color: inherit; }
 .qa-orange:hover { background:#d97706; color:#fff; }
 .qa-green:hover  { background:#059669; color:#fff; }
 
+.report-mini-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.report-mini-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--dark-2);
+  line-height: 1.1;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    BADGES / PILLS
    ═══════════════════════════════════════════════════════════════════════════ */

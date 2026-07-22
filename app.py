@@ -3,7 +3,8 @@ from extensions import db
 from config import Config
 from models import Produto, Cliente, Pedido, ItemPedido, Boleto
 from utils.pdf_generator import gerar_pdf_pedido
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, time
+from calendar import monthrange
 from decimal import Decimal
 from werkzeug.utils import secure_filename
 import re
@@ -47,6 +48,72 @@ def stats_dashboard():
     )
 
 
+def listar_opcoes_meses(qtd=12):
+    hoje = date.today().replace(day=1)
+    nomes_meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ]
+    meses = []
+    atual = hoje
+
+    for _ in range(qtd):
+        meses.append({
+            'valor': atual.strftime('%Y-%m'),
+            'label': f"{nomes_meses[atual.month - 1]}/{atual.year}",
+        })
+        if atual.month == 1:
+            atual = atual.replace(year=atual.year - 1, month=12)
+        else:
+            atual = atual.replace(month=atual.month - 1)
+
+    return meses
+
+
+def resolver_periodo_relatorio(periodo, data_inicio_str='', data_fim_str='', mes_ref=''):
+    hoje = date.today()
+
+    if periodo == 'hoje':
+        data_inicio = hoje
+        data_fim = hoje
+    elif periodo == 'semana':
+        data_inicio = hoje - timedelta(days=hoje.weekday())
+        data_fim = hoje
+    elif periodo == 'mes':
+        try:
+            if mes_ref:
+                referencia = datetime.strptime(mes_ref, '%Y-%m').date()
+            else:
+                referencia = hoje.replace(day=1)
+        except ValueError:
+            referencia = hoje.replace(day=1)
+
+        ultimo_dia = monthrange(referencia.year, referencia.month)[1]
+        data_inicio = referencia.replace(day=1)
+        data_fim = referencia.replace(day=ultimo_dia)
+    elif periodo == 'personalizado' and data_inicio_str and data_fim_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        except ValueError:
+            ultimo_dia = monthrange(hoje.year, hoje.month)[1]
+            data_inicio = hoje.replace(day=1)
+            data_fim = hoje.replace(day=ultimo_dia)
+            periodo = 'mes'
+    else:
+        ultimo_dia = monthrange(hoje.year, hoje.month)[1]
+        data_inicio = hoje.replace(day=1)
+        data_fim = hoje.replace(day=ultimo_dia)
+        periodo = 'mes'
+
+    if data_inicio > data_fim:
+        data_inicio, data_fim = data_fim, data_inicio
+
+    inicio_dt = datetime.combine(data_inicio, time.min)
+    fim_dt = datetime.combine(data_fim, time.max)
+    return periodo, data_inicio, data_fim, inicio_dt, fim_dt
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
@@ -56,6 +123,113 @@ def index():
     s = stats_dashboard()
     ultimos_pedidos = Pedido.query.order_by(Pedido.data.desc()).limit(8).all()
     return render_template('dashboard.html', ultimos_pedidos=ultimos_pedidos, **s)
+
+
+@app.route('/relatorios')
+def relatorios():
+    periodo = request.args.get('periodo', 'mes')
+    data_inicio_str = request.args.get('data_inicio', '')
+    data_fim_str = request.args.get('data_fim', '')
+    mes_ref = request.args.get('mes_ref', '')
+
+    periodo, data_inicio, data_fim, inicio_dt, fim_dt = resolver_periodo_relatorio(
+        periodo, data_inicio_str, data_fim_str, mes_ref
+    )
+    opcoes_meses = listar_opcoes_meses()
+    if not mes_ref:
+        mes_ref = data_inicio.strftime('%Y-%m')
+
+    pedidos_base = Pedido.query.filter(Pedido.data >= inicio_dt, Pedido.data <= fim_dt)
+
+    total_pedidos = pedidos_base.count()
+    total_vendas = pedidos_base.with_entities(db.func.sum(Pedido.total)).scalar() or 0
+    total_recebido = pedidos_base.with_entities(
+        db.func.sum(db.case((Pedido.pago == True, Pedido.total), else_=0))
+    ).scalar() or 0
+    total_a_receber = Decimal(str(total_vendas)) - Decimal(str(total_recebido))
+
+    custo_total = db.session.query(
+        db.func.sum(ItemPedido.quantidade * db.func.coalesce(Produto.preco_compra, 0))
+    ).join(Pedido, Pedido.id == ItemPedido.pedido_id).join(
+        Produto, Produto.id == ItemPedido.produto_id
+    ).filter(
+        Pedido.data >= inicio_dt,
+        Pedido.data <= fim_dt
+    ).scalar() or 0
+
+    lucro_total = Decimal(str(total_vendas)) - Decimal(str(custo_total))
+    ticket_medio = (Decimal(str(total_vendas)) / total_pedidos) if total_pedidos else Decimal('0')
+
+    top_clientes_q = db.session.query(
+        Cliente.nome.label('nome'),
+        db.func.count(Pedido.id).label('pedidos'),
+        db.func.sum(Pedido.total).label('total'),
+        db.func.sum(db.case((Pedido.pago == True, Pedido.total), else_=0)).label('recebido'),
+    ).join(Pedido, Pedido.cliente_id == Cliente.id).filter(
+        Pedido.data >= inicio_dt,
+        Pedido.data <= fim_dt
+    ).group_by(
+        Cliente.id, Cliente.nome
+    ).order_by(
+        db.func.sum(Pedido.total).desc()
+    ).limit(10).all()
+
+    top_produtos_q = db.session.query(
+        Produto.codigo.label('codigo'),
+        Produto.nome.label('nome'),
+        db.func.sum(ItemPedido.quantidade).label('quantidade'),
+        db.func.sum(ItemPedido.subtotal).label('faturamento'),
+        db.func.sum(
+            ItemPedido.subtotal - (ItemPedido.quantidade * db.func.coalesce(Produto.preco_compra, 0))
+        ).label('lucro')
+    ).join(ItemPedido, ItemPedido.produto_id == Produto.id).join(
+        Pedido, Pedido.id == ItemPedido.pedido_id
+    ).filter(
+        Pedido.data >= inicio_dt,
+        Pedido.data <= fim_dt
+    ).group_by(
+        Produto.id, Produto.codigo, Produto.nome
+    ).order_by(
+        db.func.sum(ItemPedido.subtotal).desc()
+    ).limit(10).all()
+
+    top_clientes = [{
+        'nome': row.nome,
+        'pedidos': int(row.pedidos or 0),
+        'total': float(row.total or 0),
+        'recebido': float(row.recebido or 0),
+        'a_receber': float(Decimal(str(row.total or 0)) - Decimal(str(row.recebido or 0))),
+    } for row in top_clientes_q]
+
+    top_produtos = [{
+        'codigo': row.codigo,
+        'nome': row.nome,
+        'quantidade': float(row.quantidade or 0),
+        'faturamento': float(row.faturamento or 0),
+        'lucro': float(row.lucro or 0),
+    } for row in top_produtos_q]
+
+    resumo = {
+        'total_pedidos': total_pedidos,
+        'total_vendas': float(total_vendas),
+        'custo_total': float(custo_total),
+        'lucro_total': float(lucro_total),
+        'ticket_medio': float(ticket_medio),
+        'total_recebido': float(total_recebido),
+        'total_a_receber': float(total_a_receber),
+    }
+
+    return render_template(
+        'relatorios.html',
+        periodo=periodo,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        mes_ref=mes_ref,
+        opcoes_meses=opcoes_meses,
+        resumo=resumo,
+        top_clientes=top_clientes,
+        top_produtos=top_produtos,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
