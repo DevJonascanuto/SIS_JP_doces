@@ -2,5 +2,5 @@
 title JP Doces - Sistema de Pedidos
 cd /d "%~dp0"
 echo Iniciando JP Doces...
-python app.py
+"%~dp0.venv\Scripts\python.exe" app.py
 pause

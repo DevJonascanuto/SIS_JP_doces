@@ -48,6 +48,32 @@ def stats_dashboard():
     )
 
 
+def produtos_dashboard(limit=15):
+    top_produtos_q = db.session.query(
+        Produto.codigo.label('codigo'),
+        Produto.nome.label('nome'),
+        db.func.sum(ItemPedido.quantidade).label('quantidade'),
+        db.func.sum(ItemPedido.subtotal).label('faturamento'),
+        db.func.sum(
+            ItemPedido.subtotal - (ItemPedido.quantidade * db.func.coalesce(Produto.preco_compra, 0))
+        ).label('lucro')
+    ).join(
+        ItemPedido, ItemPedido.produto_id == Produto.id
+    ).group_by(
+        Produto.id, Produto.codigo, Produto.nome
+    ).order_by(
+        db.func.sum(ItemPedido.quantidade).desc()
+    ).limit(limit).all()
+
+    return [{
+        'codigo': row.codigo,
+        'nome': row.nome,
+        'quantidade': float(row.quantidade or 0),
+        'faturamento': float(row.faturamento or 0),
+        'lucro': float(row.lucro or 0),
+    } for row in top_produtos_q]
+
+
 def listar_opcoes_meses(qtd=12):
     hoje = date.today().replace(day=1)
     nomes_meses = [
@@ -122,7 +148,13 @@ def resolver_periodo_relatorio(periodo, data_inicio_str='', data_fim_str='', mes
 def index():
     s = stats_dashboard()
     ultimos_pedidos = Pedido.query.order_by(Pedido.data.desc()).limit(8).all()
-    return render_template('dashboard.html', ultimos_pedidos=ultimos_pedidos, **s)
+    top_produtos_dashboard = produtos_dashboard()
+    return render_template(
+        'dashboard.html',
+        ultimos_pedidos=ultimos_pedidos,
+        top_produtos_dashboard=top_produtos_dashboard,
+        **s
+    )
 
 
 @app.route('/relatorios')

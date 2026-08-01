@@ -1,2 +1,4 @@
 Set objShell = CreateObject("Shell.Application")
-objShell.ShellExecute "cmd.exe", "/c """ & "C:\PROJETOS\SIS_JP_doces\INICIAR_JP_DOCES.bat" & """", "", "runas", 1
+Set fso = CreateObject("Scripting.FileSystemObject")
+pasta = fso.GetParentFolderName(WScript.ScriptFullName)
+objShell.ShellExecute "cmd.exe", "/c """ & pasta & "\INICIAR_JP_DOCES.bat" & """", "", "runas", 1

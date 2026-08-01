@@ -2,6 +2,10 @@
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 
 <!-- Cards de estatísticas -->
@@ -57,6 +61,51 @@
     </div>
   </div>
 
+</div>
+
+<div class="card-panel animate-fade mb-4" style="--delay:.42s">
+  <div class="panel-header panel-header-wrap">
+    <div>
+      <div class="panel-title"><i class="bi bi-bar-chart-line"></i> Produtos Mais Vendidos</div>
+      <div class="chart-subtitle">Acompanhe quantidade, faturamento e lucro dos produtos com melhor saída.</div>
+    </div>
+    <div class="chart-controls">
+      <select id="chartTipo" class="form-select jp-select chart-select">
+        <option value="bar">Colunas</option>
+        <option value="pie">Pizza</option>
+        <option value="doughnut">Rosca</option>
+      </select>
+      <select id="chartMetrica" class="form-select jp-select chart-select">
+        <option value="quantidade">Mais vendidos</option>
+        <option value="faturamento">Faturamento</option>
+        <option value="lucro">Lucro</option>
+      </select>
+      <select id="chartLimite" class="form-select jp-select chart-select">
+        <option value="3">Top 3</option>
+        <option value="5" selected>Top 5</option>
+        <option value="10">Top 10</option>
+        <option value="15">Top 15</option>
+      </select>
+    </div>
+  </div>
+
+  {% if top_produtos_dashboard %}
+  <div class="row g-4 align-items-start">
+    <div class="col-xl-8">
+      <div class="chart-shell">
+        <canvas id="dashboardProdutosChart"></canvas>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="chart-legend-panel" id="chartResumoProdutos"></div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state-sm">
+    <i class="bi bi-box-seam"></i>
+    <p>Nenhum produto vendido ainda.</p>
+  </div>
+  {% endif %}
 </div>
 
 <!-- Quick actions -->
@@ -173,6 +222,130 @@ document.addEventListener('DOMContentLoaded', () => {
       labelEl.textContent = labels[metrica];
     });
   });
+
+  const produtosChartEl = document.getElementById('dashboardProdutosChart');
+  const resumoEl = document.getElementById('chartResumoProdutos');
+  if (produtosChartEl && resumoEl && window.Chart) {
+    const dadosProdutos = {{ top_produtos_dashboard|tojson }};
+    const tipoEl = document.getElementById('chartTipo');
+    const metricaEl = document.getElementById('chartMetrica');
+    const limiteEl = document.getElementById('chartLimite');
+    const palette = [
+      '#e91e8c', '#7c3aed', '#10b981', '#f59e0b', '#0ea5e9',
+      '#ef4444', '#8b5cf6', '#14b8a6', '#f97316', '#6366f1',
+      '#22c55e', '#ec4899', '#3b82f6', '#84cc16', '#f43f5e'
+    ];
+    let produtosChart;
+
+    const metricLabels = {
+      quantidade: 'Quantidade Vendida',
+      faturamento: 'Faturamento',
+      lucro: 'Lucro',
+    };
+
+    function fmtNumero(valor, metrica) {
+      if (metrica === 'quantidade') {
+        return Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+      }
+      return `R$ ${Number(valor).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+    }
+
+    function montarResumo(lista) {
+      resumoEl.innerHTML = lista.map((item, idx) => `
+        <div class="chart-summary-item">
+          <div class="chart-summary-head">
+            <span class="chart-color-dot" style="background:${palette[idx % palette.length]}"></span>
+            <div>
+              <div class="chart-summary-code">${item.codigo}</div>
+              <div class="chart-summary-name">${item.nome}</div>
+            </div>
+          </div>
+          <div class="chart-summary-metrics">
+            <span>Qtd: <strong>${fmtNumero(item.quantidade, 'quantidade')}</strong></span>
+            <span>Fat: <strong>${fmtNumero(item.faturamento, 'faturamento')}</strong></span>
+            <span>Lucro: <strong>${fmtNumero(item.lucro, 'lucro')}</strong></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderProdutosChart() {
+      const tipo = tipoEl.value;
+      const metrica = metricaEl.value;
+      const limite = Number(limiteEl.value);
+      const lista = dadosProdutos.slice(0, limite);
+      const labelsProdutos = lista.map(item => `${item.codigo} - ${item.nome}`);
+      const valores = lista.map(item => item[metrica]);
+
+      if (produtosChart) {
+        produtosChart.destroy();
+      }
+
+      produtosChart = new Chart(produtosChartEl, {
+        type: tipo,
+        data: {
+          labels: labelsProdutos,
+          datasets: [{
+            label: metricLabels[metrica],
+            data: valores,
+            backgroundColor: palette.slice(0, lista.length),
+            borderColor: palette.slice(0, lista.length),
+            borderWidth: tipo === 'bar' ? 1 : 0,
+            borderRadius: tipo === 'bar' ? 8 : 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: tipo !== 'bar',
+              position: 'bottom',
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const item = lista[context.dataIndex];
+                  if (!item) return '';
+                  return [
+                    `${metricLabels[metrica]}: ${fmtNumero(item[metrica], metrica)}`,
+                    `Faturamento: ${fmtNumero(item.faturamento, 'faturamento')}`,
+                    `Lucro: ${fmtNumero(item.lucro, 'lucro')}`,
+                  ];
+                }
+              }
+            }
+          },
+          scales: tipo === 'bar' ? {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback(value) {
+                  return metrica === 'quantidade' ? value : `R$ ${value}`;
+                }
+              }
+            },
+            x: {
+              ticks: {
+                callback(value) {
+                  const label = this.getLabelForValue(value);
+                  return label.length > 18 ? label.slice(0, 18) + '...' : label;
+                }
+              }
+            }
+          } : {}
+        }
+      });
+
+      montarResumo(lista);
+    }
+
+    [tipoEl, metricaEl, limiteEl].forEach(el => el.addEventListener('change', renderProdutosChart));
+    renderProdutosChart();
+  }
 });
 </script>
 {% endblock %}
